@@ -1,4 +1,4 @@
-name: 🚀 CI Verification
+name: 🚀 Deploy to Cloudflare Workers
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  verify:
-    name: 🏗️ Verify Codebase & Integrity
+  deploy:
+    name: 🏗️ Deploy to Cloudflare Workers
     runs-on: ubuntu-latest
 
     steps:
@@ -27,5 +27,16 @@ jobs:
         working-directory: ./mail-worker
         run: node -c src/index.js
 
-      - name: ✅ Verification Successful
-        run: echo "GrabMails CI passed cleanly with zero errors!"
+      - name: 🚀 Deploy with Wrangler
+        working-directory: ./mail-worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || vars.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "⚡ Deploying to Cloudflare Workers..."
+            npx wrangler deploy
+            echo "✅ Deployment completed successfully!"
+          else
+            echo "⚠️ CLOUDFLARE_API_TOKEN secret is not set in GitHub repository settings."
+          fi
