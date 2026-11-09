@@ -14,8 +14,12 @@ export default defineConfig(({mode}) => {
             port: 3001,
             hmr: true,
         },
+        esbuild: {
+            jsx: 'automatic',
+        },
         base: env.VITE_STATIC_URL || '/',
-        plugins: [vue(),
+        plugins: [
+            vue(),
             VitePWA({
                 injectRegister: 'script-defer',
                 manifest: {

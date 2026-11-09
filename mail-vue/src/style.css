@@ -1,3 +1,37 @@
+@import "./bencho.css";
+
+/* ══ Lenis Smooth Scroll CSS Rules ══ */
+html.lenis, html.lenis body {
+    height: auto;
+}
+.lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+    overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+    overflow: hidden;
+}
+.lenis.lenis-scrolling iframe {
+    pointer-events: none;
+}
+
+/* ══ Modern Slim Typography (Strictly Zero Fat/Heavy Fonts) ══ */
+h1, h2, h3, h4, h5, h6, .form-title, .title {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.02em;
+}
+
+b, strong {
+    font-weight: 600;
+}
+
+button, input, select, textarea {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -23,11 +57,13 @@ html, body {
 }
 
 .el-table thead th {
-    font-weight: bold !important;
+    font-weight: 500 !important;
 }
 
 body {
-    font-family: Inter, "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     line-height: 1.5;
     color: var(--el-text-color-primary);
     font-size: 14px;
@@ -106,6 +142,27 @@ button, input, select, textarea {
 }
 
 :root {
+    --cream-bg: #FAF8F5;
+    --cream-surface: #FFFDF9;
+    --cream-fill: #F5F1E8;
+    --cream-border: #E8E2D7;
+    --cream-border-subtle: #F0ECE4;
+    --cream-ink: #1C1917;
+    --cream-muted: #78716C;
+
+    --el-bg-color: #FAF8F5;
+    --el-bg-color-page: #FAF8F5;
+    --el-bg-color-overlay: #FFFDF9;
+    --el-text-color-primary: #1C1917;
+    --el-text-color-regular: #44403C;
+    --el-text-color-secondary: #78716C;
+    --el-border-color: #E8E2D7;
+    --el-border-color-light: #EDE8DF;
+    --el-border-color-lighter: #F5F1E8;
+    --el-fill-color-blank: #FFFDF9;
+    --el-fill-color: #F5F1E8;
+    --el-fill-color-light: #FAF8F5;
+
     --el-color-primary: #1890ff;
     --el-color-primary-dark-2: #1064c0;
     --el-color-primary-light-3: #4dabff;
@@ -113,31 +170,31 @@ button, input, select, textarea {
     --el-color-primary-light-7: #91d5ff;
     --el-color-primary-light-9: #e6f7ff;
 
-    --extra-light-fill: #FAFCFF;
-    --settings-page-background: #fafbfc;
-    --light-ill: #F5F7FA;
-    --light-border: #E4E7ED;
+    --extra-light-fill: #FAF8F5;
+    --settings-page-background: #FAF8F5;
+    --light-ill: #F5F1E8;
+    --light-border: #E8E2D7;
     --header-actions-border: inset 0 -1px 0 0 var(--el-border-color-lighter);
-    --aside-backgound: #191A23;
-    --aside-menu-active-background: #27282D;
-    --loadding-background: rgba(255, 255, 255, 0.8);
-    --dark-border: #CDD0D6;
-    --base-fill: #F0F2F5;
-    --regular-text-color: #585d69;
-    --light-border-color: #e7e9ec;
-    --aside-right-border: 3px 0 5px rgba(0, 21, 41, .35);
-    --choose-account-background: var(--el-color-primary-light-8);
+    --aside-backgound: #1C1917;
+    --aside-menu-active-background: #292524;
+    --loadding-background: rgba(250, 248, 245, 0.85);
+    --dark-border: #D5CEBF;
+    --base-fill: #F5F1E8;
+    --regular-text-color: #57534E;
+    --light-border-color: #E8E2D7;
+    --aside-right-border: 1px solid #E8E2D7;
+    --choose-account-background: #F0EBE0;
     --el-text-color-regular: var(--el-text-color-primary);
-    --email-scroll-content-color: rgba(25, 41, 59, 0.4);
-    --search-hit-background: #ffe58f;
-    --email-hover-background: #F2F6FC;
-    --email-right-click-background: #FDF6EC;
+    --email-scroll-content-color: rgba(28, 25, 23, 0.4);
+    --search-hit-background: #fed7aa;
+    --email-hover-background: #F5F0E6;
+    --email-right-click-background: #FAF5EB;
     --login-border: none;
-    --form-desc-color: #71717a;
-    --login-switch-color: #006be6;
-    --scrollbar-track-color: #A8ABB2;
-    --base-border-color: #DCDFE6;
-    --secondary-text-color: #909399;
+    --form-desc-color: #78716C;
+    --login-switch-color: #0284c7;
+    --scrollbar-track-color: #D5CEBF;
+    --base-border-color: #E8E2D7;
+    --secondary-text-color: #78716C;
     --message-block-color: rgba(0, 0, 0, 0);
     --loading-hide-transition: all 200ms;
     --vt-x: 50%;
@@ -217,4 +274,86 @@ html[data-theme-to="light"]::view-transition-old(root) {
 @keyframes vt-radial-out {
     from { clip-path: circle(var(--vt-end-radius, 0px) at var(--vt-x) var(--vt-y)); }
     to   { clip-path: circle(0px at var(--vt-x) var(--vt-y)); }
+}
+
+/* ══ Interior UI: Modern Curved Cards & Responsive Design ══ */
+
+/* Email list rows and containers */
+.email-container {
+    padding: 12px 16px;
+    border-radius: 20px;
+    transition: all 200ms ease;
+}
+
+.email-row {
+    border-radius: 14px !important;
+    margin: 4px 8px !important;
+    padding: 10px 14px !important;
+    transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease !important;
+    border: 1px solid transparent !important;
+}
+
+.email-row:hover {
+    transform: translateY(-1px) scale(1.002);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+    border-color: var(--light-border) !important;
+}
+
+.dark .email-row:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.email-row[data-checked="true"] {
+    background: var(--choose-account-background) !important;
+}
+
+/* Content viewing container */
+.container.email-content-view,
+.content .container {
+    border-radius: 24px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+}
+
+/* Dialogs & Cards */
+.el-dialog {
+    border-radius: 24px !important;
+    overflow: hidden !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.15) !important;
+}
+
+.dark .el-dialog {
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6) !important;
+}
+
+.el-dialog__header {
+    margin-right: 0 !important;
+    padding: 20px 24px 12px 24px !important;
+}
+
+.el-dialog__body {
+    padding: 12px 24px 24px 24px !important;
+}
+
+/* Curved modern buttons */
+.el-button--primary {
+    border-radius: 12px !important;
+    font-weight: 500 !important;
+    transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.el-button--primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(24, 144, 255, 0.35);
+}
+
+/* Curved inputs across interior views */
+.el-input__wrapper {
+    border-radius: 12px !important;
+    transition: border-color 200ms ease, box-shadow 200ms ease !important;
+}
+
+/* Modern Pill Badges */
+.el-tag {
+    border-radius: 8px !important;
+    font-weight: 500 !important;
 }

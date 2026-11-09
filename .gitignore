@@ -9,7 +9,8 @@ lerna-debug.log*
 node_modules
 dist-ssr
 *.local
-dist
+mail-vue/dist
+!mail-worker/dist/
 
 .vscode/*
 !.vscode/extensions.json
@@ -22,7 +23,6 @@ dist
 *.sw?
 
 mail-vue/node_modules
-mail-vue/dist
 .wrangler
 .venv
 git-tools.js

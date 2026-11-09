@@ -1,0 +1,518 @@
+/* ══ Bencho Components Stylesheet (EyeTracker, SlideToConfirm, MagnifyingDock) ══ */
+
+/* ══ Eye tracker ═══════════════════════════════════════════
+   See lab/Watcher.tsx. The frame holds the largest ball the
+   Size knob allows, so the wall never rescales it. */
+.eyt {
+  --bg: var(--el-bg-color, #FAF8F5);
+  --card: var(--el-bg-color-overlay, #ffffff);
+  --fill-slab: #ffffff;
+  --fill-on: #1C1917;
+  --font-ui: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --ink: #1C1917;
+
+  width: 200px;
+  height: 200px;
+  display: grid;
+  place-items: center;
+  position: relative;
+  font-family: var(--font-ui);
+  font-weight: 400;
+}
+
+.dark .eyt,
+[data-theme="dark"] .eyt {
+  --bg: var(--el-bg-color, #111215);
+  --card: var(--el-bg-color-overlay, #18191E);
+  --fill-slab: #24252B;
+  --fill-on: #F5F2EB;
+  --ink: #F5F2EB;
+}
+
+.eyt-ball {
+  width: var(--eyt-size, 100px);
+  height: var(--eyt-size, 100px);
+  overflow: visible;
+  filter: drop-shadow(0 10px 20px rgba(28, 25, 23, 0.08));
+}
+
+.dark .eyt-ball {
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.45));
+}
+
+/* the ball is the Fill's own slab and the eyes its ink: white
+   with dark eyes on a light fill, near-black with light eyes on
+   a dark one */
+.eyt-body { fill: var(--fill-slab, #ffffff); }
+
+.eyt-eye { fill: var(--fill-on, #1C1917); }
+
+/* a press on the toy opens a chat bubble off its lower right: the
+   pet's bubble, its square corner pointing back at the face */
+
+/* a press gives a little under the finger and springs back out */
+.eyt-ball[data-poke] {
+  cursor: pointer;
+  transform-origin: center;
+  transition: scale 420ms cubic-bezier(0.24, 1.34, 0.38, 1);
+  -webkit-tap-highlight-color: transparent;}
+
+.eyt-ball[data-poke]:active { scale: 0.96; transition-duration: 160ms; transition-timing-function: ease; }
+
+.eyt-say {
+  position: absolute;
+  left: calc(50% + var(--eyt-size, 100px) * 0.36);
+  top: calc(50% + var(--eyt-size, 100px) * 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 34px;
+  padding: 0 16px;
+  border-radius: 8px 16px 16px 16px;
+  background: var(--tint, #2563eb);
+  box-shadow: inset 0 -1.5px 0 rgba(0, 0, 0, 0.1), 0 6px 18px rgba(37, 99, 235, 0.22);
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  transform-origin: top left;
+  opacity: 0;
+  scale: 0.85;
+  pointer-events: none;
+  transition: opacity 160ms ease, scale 220ms cubic-bezier(0.24, 1.34, 0.38, 1), background-color 220ms ease;
+  letter-spacing: -0.01em;
+  z-index: 20;}
+
+.eyt-say[data-on] { opacity: 1; scale: 1; }
+
+.eyt-caret {
+  width: 1.5px;
+  height: 13px;
+  border-radius: 1px;
+  background: var(--fill-slab, var(--card));
+  animation: pet-caret 1s steps(1) infinite;}
+
+.logo-test .eyt { width: auto; height: auto; }
+
+.logo-test .eyt-body { fill: var(--ink); }
+
+.logo-test .eyt-eye { fill: var(--bg); }
+
+/* the circle and pill in dark mode match the hexagon: a lifted
+   dark body with the eyes kept white */
+[data-theme="dark"] .logo-test .eyt-body,
+.dark .logo-test .eyt-body { fill: #24252B; /* the hexagon's body; site chrome, not a block: keep off the system snap */ }
+
+[data-theme="dark"] .logo-test .eyt-eye,
+.dark .logo-test .eyt-eye { fill: #F5F2EB; }
+
+.bench-lock-face .eyt { position: relative; width: 96px; height: 96px; }
+
+.bench-lock-face .eyt-body { fill: transparent; }
+
+.bench-lock-face .eyt-eye { fill: #fff; }
+
+@keyframes pet-caret {
+  50% { opacity: 0; }}
+
+
+/* ══ Slide to confirm ══════════════════════════════════════
+   A handle crossing a track, and on commit the handle IS the
+   confirmation — it unfurls leftward and fills what it crossed.
+   See SlideConfirm.tsx for why the right edge stays put. */
+.sld {
+  --card: var(--el-bg-color-overlay, #ffffff);
+  --fill-slab: #F5F1E8;
+  --fill-on: #1C1917;
+  --font-ui: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --ink: #1C1917;
+  --pane-edge: rgba(226, 220, 210, 0.85);
+
+  box-sizing: border-box;
+  font-family: var(--font-ui);
+  font-weight: 400;
+  color: var(--fill-on, var(--ink));}
+
+.dark .sld,
+[data-theme="dark"] .sld {
+  --card: var(--el-bg-color-overlay, #18191E);
+  --fill-slab: #202229;
+  --fill-on: #F5F2EB;
+  --ink: #F5F2EB;
+  --pane-edge: rgba(255, 255, 255, 0.12);
+}
+
+.sld-track {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  /* ── the track is the SLAB, the handle is the INK ─────────
+     It was the other way round — a translucent wash for the
+     track on the reasoning that a groove is darker than what
+     it is cut into. True, and it has nothing to be cut into:
+     this track IS the whole block, so there is no surrounding
+     surface and a 7% wash had no opaque ground under it. On a
+     dark fill that left a near-invisible track with a dark
+     circle sitting on it. Measured: track
+     rgba(244,243,241,0.07) over a light stage.
+
+     Slab and ink is the pair the liquid toggle uses and it
+     inverts from one rule: white track with a near-black
+     handle in light, near-black track with a light handle in
+     dark. And on commit the handle fills the track, so the
+     confirmed state is a solid ink pill in both. */
+  background: var(--fill-slab, var(--card));
+  border: 1px solid var(--pane-edge);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+  /* the drag is the component; the browser may not take the
+     gesture for panning */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;}
+
+[data-stroke="on"] .sld-track {
+  box-shadow: inset 0 0 0 1px var(--pane-edge);}
+
+/* ── the ground already covered ─────────────────────────────
+   THE SAME INK AS THE HANDLE, which turns this from a trail
+   into the handle's own body. It was an 8% tint, and a tint is
+   read as a progress bar: a track filling up behind a knob that
+   slides along it. Two objects.
+
+   The geometry was already right for one. This runs from the
+   left pad to `x + GRIP` — the handle's RIGHT edge, not its
+   left — with the handle's own corner radius, so the pair
+   describes a single capsule with a rounded cap at each end and
+   the handle's cap doing the work at the leading edge. Only the
+   colour said otherwise. Matched, there is no seam to find: the
+   dot stretches out of the corner it started in and the far end
+   is still the dot.
+
+   It cannot be the ink at 100% and also sit UNDER the words. */
+.sld-wash {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  bottom: 4px;
+  background: var(--fill-on, var(--ink));
+  /* ── above the label, so it WIPES it ─────────────────────
+     Beneath it, the label's remaining ink sat on a surface its
+     own colour and went muddy rather than away — the fade
+     reaches zero at 55% of the travel and the capsule's edge
+     arrives at the first letter around 30%, so there is a
+     stretch where the two overlap. Painted over, the words are
+     covered by the advancing cap instead: they leave under a
+     rounded edge that is the handle's own shape, which reads as
+     the thing eating them rather than as a wipe.
+     The handle is `auto` and later in the DOM, and `auto` loses
+     to any z-index at all, so it needs one of its own. */
+  z-index: 1;
+  pointer-events: none;}
+
+.sld-say {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  /* ── CENTRED IN THE PILL, not in the room beside it ──────
+     It was inset by the handle's width, on the reasoning that
+     the words should be centred in the space actually left to
+     them. That is the right rule for a label sharing a row with
+     a control, and the wrong one here: the track IS the object,
+     and a label pushed 24px right of its middle reads as
+     off-centre rather than as considerate — there is nothing
+     for it to be centred against except the pill.
+
+     It costs nothing at rest — the words start well clear of
+     the handle — and the overlap it was avoiding is now the
+     point, since the capsule wipes them as it comes. */
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: color-mix(in srgb, var(--fill-on, #1C1917) 50%, var(--fill-slab, #FAF8F5));
+  pointer-events: none;
+  white-space: nowrap;}
+
+.sld-grip {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  background: var(--fill-on, var(--ink));
+  color: var(--fill-slab, var(--card));
+  cursor: grab;
+  /* ── it takes the pointer now, and the track still wins ───
+     It was `none`, so the track owned the gesture outright.
+     The handle has to know when a cursor is ON it to swell,
+     and a press still reaches the track by BUBBLING — the
+     handle is inside it — so nothing about the drag changed.
+     Once the track captures the pointer every later event is
+     retargeted there anyway, which is why a drag that wanders
+     off the handle keeps reporting. */
+  pointer-events: auto;
+  /* the wall it lands against, so the squash compresses
+     toward the end of the track rather than about its middle */
+  transform-origin: 0% 50%;
+  /* it is placed by a motion value, so nothing here may
+     transition `transform` or the two fight every frame */
+  transition: none;
+  /* over the wash, which had to claim a layer to cover the
+     label — see .sld-wash */
+  z-index: 2;
+  box-shadow: 0 4px 12px rgba(28, 25, 23, 0.15);
+}
+
+.sld-track[data-held] .sld-grip { cursor: grabbing; }
+
+/* ── two contents, both ABSOLUTE ────────────────────────────
+   Stacked so neither has to make room for the other and the
+   handle's width is free to be whatever the morph says it is.
+
+   They were one grid cell, and that put the arrow 21.3px right
+   of the handle's centre. "Confirmed" is 59px wide and the
+   resting handle is 42, so the shared track was wider than the
+   box holding it — and an overflowing grid item resolves
+   `center` to `start`, which shoved both to one side. The same
+   rule caught the carousel inside the Pro sheet.
+
+   Absolute with `inset: 0` has no such rule: each fills the
+   handle and centres its own content, at every width the morph
+   passes through, and neither can size the handle. */
+.sld-arrow,
+.sld-done {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  pointer-events: none;}
+
+@media (prefers-reduced-motion: reduce) {
+  .sld-done { transition-duration: 160ms; }
+}
+
+
+/* ── glass navigation (MagnifyingDock) ─────────────────────
+   Same recipe as .gcard: 60% white, 2px frost, refraction,
+   lit inner edge. Shapes differ, the material does not. */
+
+/* The bare pane. Same recipe as .gnav and .gdock, with no
+   layout of its own — for components that are just a surface
+   and want to arrange themselves. A card with a title in one
+   corner and a chip in the other is a house style, not a
+   requirement, and most things do not need either. */
+.gpane, .gnav, .gdock {
+  --fill-on: #1C1917;
+  --fill-slab: #FAF8F5;
+  --font-ui: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --ink: #1C1917;
+  --ink-rgb: 28, 25, 23;
+  --on-ink: #FAF8F5;
+  --pane: rgba(255, 253, 249, 0.82);
+  --pane-edge: rgba(226, 220, 210, 0.85);
+  --shadow-rgb: 28, 25, 23;
+  --try-edge: rgba(226, 220, 210, 0.9);
+  --g-blur: 16px;
+  --g-sat: 170%;
+  --g-bright: 102%;
+  --g-edge-hi: 0.85;
+  --g-edge-lo: 0.2;
+  --g-edge-far: 0.4;
+  --g-lift: 0.14;
+  --g-shadow: 0 14px 38px rgba(28, 25, 23, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --g-spec: 0.9;
+
+  position: relative;
+  background: var(--pane);
+  -webkit-backdrop-filter:
+    blur(var(--g-blur, 2px)) saturate(var(--g-sat, 150%)) brightness(var(--g-bright, 100%));
+  backdrop-filter:
+    blur(var(--g-blur, 2px)) saturate(var(--g-sat, 150%)) brightness(var(--g-bright, 100%));
+  isolation: isolate;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-weight: 400;
+}
+
+.dark .gpane, .dark .gnav, .dark .gdock,
+[data-theme="dark"] .gpane, [data-theme="dark"] .gnav, [data-theme="dark"] .gdock {
+  --fill-on: #F5F2EB;
+  --fill-slab: #1A1B20;
+  --ink: #F5F2EB;
+  --ink-rgb: 245, 242, 235;
+  --on-ink: #111215;
+  --pane: rgba(20, 21, 26, 0.82);
+  --pane-edge: rgba(255, 255, 255, 0.12);
+  --shadow-rgb: 0, 0, 0;
+  --try-edge: rgba(255, 255, 255, 0.18);
+  --g-blur: 20px;
+  --g-sat: 190%;
+  --g-bright: 95%;
+  --g-edge-hi: 0.35;
+  --g-edge-lo: 0.1;
+  --g-edge-far: 0.2;
+  --g-lift: 0.45;
+  --g-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  --g-spec: 0.3;
+}
+
+.gpane::before, .gnav::before, .gdock::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid transparent;
+  pointer-events: none;
+  z-index: 3;}
+
+/* dock */
+.gdock {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 28px;
+  touch-action: pan-y;}
+
+.gdock-item {
+  position: relative;
+  width: 44px; height: 44px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  opacity: 0.55;
+  display: grid; place-items: center;
+  cursor: pointer;
+  transition: opacity 220ms ease;}
+
+.gdock-glyph {
+  display: grid; place-items: center;
+  transform-origin: center bottom;
+  transition: transform 420ms cubic-bezier(0.24, 1.34, 0.38, 1);}
+
+.gdock-item[data-near="1"] { opacity: 0.78; }
+
+.gdock-item[data-near="0"] { opacity: 1; }
+
+.gdock-item[data-active="true"] { opacity: 1; }
+
+.gdock-item:focus-visible { outline: 1.5px solid var(--ink); outline-offset: 3px; border-radius: 10px; }
+
+.gdock-dot {
+  position: absolute;
+  left: 50%; bottom: 3px;
+  width: 3px; height: 3px;
+  margin-left: -1.5px;
+  border-radius: 50%;
+  background: var(--ink);
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity 220ms ease, transform 420ms cubic-bezier(0.24, 1.34, 0.38, 1);}
+
+.gdock-dot[data-on="true"] { opacity: 0.8; transform: scale(1); }
+
+.gdock-tip {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--fill-on, var(--ink));
+  color: var(--fill-slab, var(--on-ink));
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 30px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10;
+  transition:
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 160ms cubic-bezier(0.22, 1, 0.36, 1);
+  letter-spacing: -0.01em;
+  box-shadow: 0 4px 14px rgba(28, 25, 23, 0.15);
+}
+
+.gdock-tip > span { flex: none; }
+
+.gdock-tip:not([data-ready]) { transition: opacity 160ms cubic-bezier(0.22, 1, 0.36, 1); }
+
+.gdock-tip[data-on="true"] { opacity: 1; }
+
+[data-stroke="on"] .lab::before,
+[data-stroke="on"] .gcard::before,
+[data-stroke="on"] .gpane::before,
+[data-stroke="on"] .gnav::before,
+[data-stroke="on"] .gdock::before,
+[data-stroke="on"] .esc-btn::before,
+[data-stroke="on"] .slo-track::before,
+[data-stroke="on"] .sek-skin::before {
+  border-color: var(--pane-edge);}
+
+[data-surface="glass"] .lab::before,
+[data-surface="glass"] .gcard::before,
+[data-surface="glass"] .cmd::before,
+[data-surface="glass"] .gpane::before,
+[data-surface="glass"] .gnav::before,
+[data-surface="glass"] .gdock::before {
+  border-color: transparent;
+  background:
+    linear-gradient(
+      142deg,
+      rgba(255, 255, 255, var(--g-edge-hi, 0)) 0%,
+      rgba(255, 255, 255, var(--g-edge-lo, 0)) 26%,
+      rgba(255, 255, 255, var(--g-edge-lo, 0)) 62%,
+      rgba(255, 255, 255, var(--g-edge-far, 0)) 100%
+    ) border-box;
+  -webkit-mask:
+    linear-gradient(#000 0 0) padding-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) padding-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;}
+
+[data-surface="glass"] .lab,
+[data-surface="glass"] .gcard,
+[data-surface="glass"] .cmd,
+[data-surface="glass"] .gpane,
+[data-surface="glass"] .gnav,
+[data-surface="glass"] .gdock {
+  box-shadow: var(--g-shadow,
+    inset 0 1px 0 rgba(255, 255, 255, var(--g-spec, 0)),
+    0 10px 40px rgba(var(--shadow-rgb), var(--g-lift, 0)));}
+
+[data-surface="flat"] .lab,
+[data-surface="flat"] .gcard,
+[data-surface="flat"] .cmd,
+[data-surface="flat"] .gnav,
+[data-surface="flat"] .gdock {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;}
+
+.gtry[data-rim="flat"] .lab::before,
+.gtry[data-rim="flat"] .gcard::before,
+.gtry[data-rim="flat"] .cmd::before,
+.gtry[data-rim="flat"] .gpane::before,
+.gtry[data-rim="flat"] .gnav::before,
+.gtry[data-rim="flat"] .gdock::before {
+  border-color: var(--try-edge, transparent);
+  background: none;
+  -webkit-mask: none;
+  mask: none;}
