@@ -1,4 +1,4 @@
-import app from './hono/webs';
+﻿import app from './hono/webs';
 import { email } from './email/email';
 import userService from './service/user-service';
 import verifyRecordService from './service/verify-record-service';
@@ -10,6 +10,43 @@ export default {
 	 async fetch(req, env, ctx) {
 
 		const url = new URL(req.url)
+
+		// AI Markdown content negotiation & direct markdown routes
+		const acceptHeader = req.headers.get('accept') || '';
+		const wantsMarkdown = acceptHeader.includes('text/markdown') && !acceptHeader.includes('text/html');
+
+		if (url.pathname === '/research/email-privacy-study-2026.md' || (wantsMarkdown && url.pathname === '/research/email-privacy-study-2026')) {
+			const mdReq = new Request(new URL('/research-email-privacy-study-2026.md', req.url), req);
+			const resp = await env.assets.fetch(mdReq);
+			return new Response(resp.body, {
+				headers: {
+					'Content-Type': 'text/markdown; charset=utf-8',
+					'X-Robots-Tag': 'noindex, follow'
+				}
+			});
+		}
+
+		if (url.pathname === '/faq.md' || (wantsMarkdown && url.pathname === '/faq')) {
+			const mdReq = new Request(new URL('/faq.md', req.url), req);
+			const resp = await env.assets.fetch(mdReq);
+			return new Response(resp.body, {
+				headers: {
+					'Content-Type': 'text/markdown; charset=utf-8',
+					'X-Robots-Tag': 'noindex, follow'
+				}
+			});
+		}
+
+		if (url.pathname === '/index.md' || (wantsMarkdown && (url.pathname === '/' || url.pathname === ''))) {
+			const mdReq = new Request(new URL('/index.md', req.url), req);
+			const resp = await env.assets.fetch(mdReq);
+			return new Response(resp.body, {
+				headers: {
+					'Content-Type': 'text/markdown; charset=utf-8',
+					'X-Robots-Tag': 'noindex, follow'
+				}
+			});
+		}
 
 		if (url.pathname.startsWith('/api/')) {
 			url.pathname = url.pathname.replace('/api', '')
@@ -45,3 +82,4 @@ export default {
 		await oauthService.clearNoBindOathUser({ env })
 	},
 };
+

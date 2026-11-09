@@ -1,163 +1,152 @@
 <p align="center">
-    <img src="doc/demo/logo.png" width="80px" />
-    <h1 align="center">Cloud Mail</h1>
-    <p align="center"><strong>基于 Cloudflare 的一站式邮箱服务平台</strong></p>
-    <p align="center">
-        <a href="https://www.cloudflare.com/" target="_blank">
-            <img src="https://img.shields.io/badge/Cloudflare-F38020?labelColor=F38020&amp;color=F38020&amp;logo=cloudflare&amp;logoColor=white" alt="Cloudflare" />
-        </a>
-        <a href="https://github.com/maillab/cloud-mail/releases" target="_blank" >
-            <img src="https://img.shields.io/github/v/release/maillab/cloud-mail?logo=github&amp;logoColor=white" alt="releases" />
-        </a>
-        <a href="https://github.com/maillab/cloud-mail/tree/main?tab=MIT-1-ov-file" target="_blank" >
-            <img src="https://img.shields.io/badge/license-MIT-green" />
-        </a>  
-    </p>
-    <p align="center" >
-        <a href="https://skymail.ink">在线演示</a> · <a href="https://docs.skymail.ink">部署文档</a> ·
-        <a align="center"><a href="README-en.md">English</a> | 简体中文</a>
-    </p>
-    <p align="center">
-        <a href="https://trendshift.io/repositories/20459" target="_blank" >
-            <img src="https://trendshift.io/api/badge/repositories/20459" alt="trendshift" >
-        </a>
-        <a href="https://hellogithub.com/repository/1b1da1f9ae4c4175baa3d762b4e0ba41" target="_blank">
-            <img src="https://api.hellogithub.com/v1/widgets/recommend.svg?rid=1b1da1f9ae4c4175baa3d762b4e0ba41" alt="HelloGitHub" />
-        </a>
-    </p>
+  <img src="doc/demo/logo.png" width="80px" alt="GrabMails Logo" />
+  <h1 align="center">GrabMails</h1>
+  <p align="center"><strong>Next-Generation Privacy-First Serverless Webmail Platform</strong></p>
+  <p align="center">
+    <a href="https://grabby.qzz.io" target="_blank">
+      <img src="https://img.shields.io/badge/Live-grabby.qzz.io-2563eb?style=flat-square" alt="Live Demo" />
+    </a>
+    <a href="https://workers.cloudflare.com/" target="_blank">
+      <img src="https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white&style=flat-square" alt="Cloudflare Workers" />
+    </a>
+    <a href="https://developers.cloudflare.com/d1/" target="_blank">
+      <img src="https://img.shields.io/badge/Storage-Cloudflare_D1_%2B_KV-success?style=flat-square" alt="D1 and KV" />
+    </a>
+    <a href="LICENSE" target="_blank">
+      <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License" />
+    </a>
+  </p>
 </p>
 
+---
 
-## 项目简介
+## 🌟 Overview
 
-只需要一个域名，就可以创建多个不同的邮箱，类似各大邮箱平台，本项目支持部署到 Cloudflare Workers ，降低服务器成本，搭建自己的邮箱服务
+**GrabMails** is a high-performance, privacy-focused serverless webmail service engineered to run entirely on the **Cloudflare Serverless ecosystem** at zero server cost.
 
-## 项目展示
+Inspired by Edward Snowden’s privacy vision (*"Arguing that you don't care about the right to privacy because you have nothing to hide is no different than saying you don't care about free speech because you have nothing to say"*), GrabMails provides user-empowered email accounts with multi-alias support, end-to-end encryption, tracking protection, client-side auto-lock, and private AI email assistance without phone numbers, personal IDs, or surveillance.
 
-| ![](/doc/demo/demo.jpg)  | ![](/doc/demo/demo1.jpg) |
-|--------------------------|--------------------------|
-| ![](/doc/demo/demo2.jpg) | ![](/doc/demo/demo3.jpg) |
+---
 
+## ⚡ Tech Stack Architecture
 
-## 推荐项目
+GrabMails is built on a modern, decoupled edge architecture:
 
-<table>
-  <tr>
-    <td valign="middle">
-      <a href="https://github.com/pixtalelab/pixtale">
-        <img width="30" src="https://img.022335.xyz/logo.png" alt="Pixtale" align="middle">
-      </a>
-    </td>
-    <td valign="middle">
-      <a href="https://github.com/pixtalelab/pixtale">Pixtale</a>
-    </td>
-    <td valign="middle">
-      一个自托管云存储相册应用
-    </td>
-  </tr>
-</table>
+### 1. Edge Backend & Compute
+- **Runtime**: [Cloudflare Workers](https://developers.cloudflare.com/workers/) — ultra-low latency V8 isolate execution at edge colos worldwide.
+- **API Framework**: [Hono.js](https://hono.dev/) — ultra-fast, lightweight web standard router with middleware pipeline.
+- **ORM**: [Drizzle ORM](https://orm.drizzle.team/) — type-safe SQLite schema management.
+- **Authentication**: JWT-based session tokens with role-based access control (RBAC).
+- **Email Ingestion**: Cloudflare Email Routing with catch-all worker pipelines.
+- **Email Delivery**: Cloudflare Email Service & [Resend API](https://resend.com/).
 
-## 功能介绍
+### 2. Databases & Storage (Zero-Cost Serverless)
+- **Primary Database**: [Cloudflare D1](https://developers.cloudflare.com/d1/) — serverless SQLite distributed at edge with instant read replication.
+- **Key-Value Cache**: [Cloudflare KV](https://developers.cloudflare.com/kv/) — high-frequency cache for system configurations, user preferences, security state, and wallpaper catalogs.
+- **Object Storage**: [Cloudflare R2](https://developers.cloudflare.com/r2/) (optional/S3-compatible) for encrypted attachments and media storage.
 
-- **💰 低成本使用**： 可部署到 Cloudflare Workers 降低服务器成本
+### 3. Edge AI & Intelligence
+- **LLM Engine**: [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/) powered by `@cf/meta/llama-3.1-8b-instruct-fast`.
+- **Capabilities**:
+  - Automatic OTP / verification code extraction.
+  - One-click smart email summarization.
+  - Private AI reply & composition assistant.
+  - Tone polish (formal, neutral, direct) with zero training retention.
 
-- **💻 响应式设计**：响应式布局自动适配PC和大部分手机端浏览器
+### 4. Modern Curved Urban Frontend
+- **Framework**: [Vue 3](https://vuejs.org/) (Composition API) with [Vite](https://vitejs.dev/).
+- **UI Architecture**: *Curved Urban UI* design system featuring pitch-black canvas (`#000000`), Vanilla Cream (`#F0E7D5`), and Soft Lilac (`#D4BCC8`) accents.
+- **Components**: [Element Plus](https://element-plus.org/) & [Iconify](https://iconify.design/).
+- **Rich Text Editor**: [TinyMCE 7](https://www.tiny.cloud/) full WYSIWYG suite with customizable themes and oxide skins.
+- **State & Routing**: Pinia + Vue Router with SPA asset fallback handling on Cloudflare Assets.
 
-- **📧 邮件发送**：集成 Cloudflare Email 和 Resend 发送邮件，支持群发
+---
 
-- **🛡️ 管理员功能**：可以对用户，邮件进行管理，RABC权限控制对功能及使用资源限制
+## 🔐 Key Features
 
-- **📦 附件收发**：支持收发附件，使用R2对象存储保存和下载文件
+- **🛡️ Privacy-First Foundation**:
+  - No phone numbers, real-name requirements, or surveillance tracking.
+  - Remote pixel & email beacon tracker blocking with isolated image proxies.
+  - Automatic session timeout & screen auto-lock (1 to 60 minutes) protected with master password.
+  - End-to-End Encryption (E2EE) support for inter-domain messaging.
+- **💌 Multi-Alias & Routing**:
+  - Create up to 10 distinct email aliases per account on your own custom domain (e.g. `@grabby.qzz.io`).
+  - Seamless catch-all inbound routing.
+- **✍️ Full Rich Text Composer**:
+  - TinyMCE WYSIWYG editor with formatting, typography, links, and code blocks.
+  - 3-second undo send capability.
+  - Attachment handling and automated draft autosaving.
+- **🤖 Built-in Edge AI**:
+  - Instant verification code badge recognition directly in your inbox.
+  - Email summarization, multilingual translation, and AI draft generation.
+- **🌍 Internationalization (i18n)**:
+  - Supports 8+ languages (English, 中文, Español, Français, Deutsch, etc.) with instant live locale switching.
+- **🎨 Visual Customization**:
+  - Dynamic wallpaper catalog with customizable opacity and contrast modes.
+  - Seamless Light/Dark theme switching with continuous curvature aesthetic.
 
-- **🔔 邮件推送**：接收邮件后可以转发到TG机器人或其他服务商邮箱
+---
 
-- **📡 开放API**：支持使用API批量生成用户，多条件查询邮件 
+## 🚀 Quick Start & Deployment
 
-- **🔢 验证码识别**：使用Workers AI，自动识别邮件验证码 
+### Prerequisites
+- Node.js `>= 18.0.0`
+- [Cloudflare Account](https://dash.cloudflare.com/)
+- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/) (`npm install -g wrangler`)
 
-- **📈 数据可视化**：使用ECharts对系统数据详情，用户邮件增长可视化显示
-
-- **🎨 个性化设置**：可以自定义网站标题，登录背景，透明度
-
-- **🤖 人机验证**：集成Turnstile人机验证，防止人机批量注册
-
-- **📜 更多功能**：正在开发中...
-
-
-
-## 技术栈
-
-- **平台**：[Cloudflare Workers](https://developers.cloudflare.com/workers/)
-
-- **Web框架**：[Hono](https://hono.dev/)
-
-- **ORM：**[Drizzle](https://orm.drizzle.team/)
-
-- **前端框架**：[Vue3](https://vuejs.org/) 
-
-- **UI框架**：[Element Plus](https://element-plus.org/) 
-
-- **邮件发送：** [Cloudflare Email](https://developers.cloudflare.com/email-service/) / [Resend](https://resend.com/)
-
-- **缓存**：[Cloudflare KV](https://developers.cloudflare.com/kv/)
-
-- **数据库**：[Cloudflare D1](https://developers.cloudflare.com/d1/)
-
-- **文件存储**：[Cloudflare R2](https://developers.cloudflare.com/r2/)
-
-## 目录结构
-
-```
-cloud-mail
-├── mail-worker                    # worker后端项目
-│   ├── src
-│   │   ├── api                    # api接口层
-│   │   ├── const                  # 项目常量
-│   │   ├── dao                    # 数据访问层
-│   │   ├── email                  # 邮件处理接收
-│   │   ├── entity                 # 数据库实体
-│   │   ├── error                  # 自定义异常
-│   │   ├── hono                   # web框架配置、拦截器、全局异常等
-│   │   ├── i18n                   # 语言国际化
-│   │   ├── init                   # 数据库缓存初始化
-│   │   ├── model                  # 响应体数据封装
-│   │   ├── security               # 身份权限认证
-│   │   ├── service                # 业务服务层
-│   │   ├── template               # 消息模板
-│   │   ├── utils                  # 工具类
-│   │   └── index.js               # 入口文件
-│   ├── pageckge.json              # 项目依赖
-│   └── wrangler.toml              # 项目配置
-│
-├── mail-vue                       # vue前端项目
-│   ├── src
-│   │   ├── axios                  # axios配置
-│   │   ├── components             # 自定义组件
-│   │   ├── echarts                # echarts组件导入
-│   │   ├── i18n                   # 语言国际化
-│   │   ├── init                   # 入站初始化
-│   │   ├── layout                 # 主体布局组件
-│   │   ├── perm                   # 权限认证
-│   │   ├── request                # api接口
-│   │   ├── router                 # 路由配置
-│   │   ├── store                  # 全局状态管理
-│   │   ├── utils                  # 工具类
-│   │   ├── views                  # 页面组件
-│   │   ├── app.vue                # 入口组件
-│   │   ├── main.js                # 入口js
-│   │   └── style.css              # 全局css
-│   ├── package.json               # 项目依赖
-└── └── env.release                # 项目配置
+### 1. Clone the Repository
+```bash
+git clone https://github.com/GrabbyGrabby/GrabMails.git
+cd GrabMails
 ```
 
-## 许可证
+### 2. Configure Cloudflare Resources
+In `mail-worker/wrangler.toml`:
+```toml
+name = "grabby-mail"
+main = "src/index.js"
+compatibility_date = "2025-06-04"
 
-本项目采用 [MIT](LICENSE) 许可证	
+[[d1_databases]]
+binding = "db"
+database_name = "grabby_mail_db"
+database_id = "<YOUR_D1_DATABASE_ID>"
 
+[[kv_namespaces]]
+binding = "kv"
+id = "<YOUR_KV_NAMESPACE_ID>"
 
-## 交流
+[ai]
+binding = "ai"
 
-[Telegram](https://t.me/cloud_mail_tg)
+[assets]
+binding = "assets"
+directory = "./dist"
+not_found_handling = "single-page-application"
+run_worker_first = true
 
+[vars]
+domain = '["yourdomain.com"]'
+jwt_secret = "your-custom-jwt-secret"
+default_reg_key = "FREESnowden"
+admin_email = "admin@yourdomain.com"
+title = "GrabMails"
+```
 
+### 3. Initialize Database Schema
+Deploy the Worker, then trigger the schema initialization:
+```bash
+curl https://yourdomain.com/api/init/<YOUR_JWT_SECRET>
+```
 
+### 4. Deploy
+```bash
+cd mail-worker
+npx wrangler deploy
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
