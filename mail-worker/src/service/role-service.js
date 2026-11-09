@@ -156,7 +156,14 @@ const roleService = {
 
 	hasAvailDomainPerm(availDomain, email) {
 
-		availDomain = availDomain.split(',').filter(item => item !== '');
+				if (!availDomain) {
+			return true;
+		}
+		if (typeof availDomain === 'string') {
+			availDomain = availDomain.split(',').filter(item => item !== '');
+		} else if (!Array.isArray(availDomain)) {
+			return true;
+		}
 
 		if (availDomain.length === 0) {
 			return true
@@ -187,7 +194,14 @@ const roleService = {
 
 	isBanEmail(banEmail, fromEmail) {
 
-		banEmail = banEmail.split(',').filter(item => item !== '');
+				if (!banEmail) {
+			return false;
+		}
+		if (typeof banEmail === 'string') {
+			banEmail = banEmail.split(',').filter(item => item !== '');
+		} else if (!Array.isArray(banEmail)) {
+			return false;
+		}
 
 		if (banEmail.includes('*')) {
 			return true;

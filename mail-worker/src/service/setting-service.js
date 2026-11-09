@@ -70,7 +70,31 @@ const settingService = {
 
 		setting.projectLink = projectLink;
 
-		setting.emailPrefixFilter = setting.emailPrefixFilter.split(",").filter(Boolean);
+				if (Array.isArray(setting.emailPrefixFilter)) {
+			// already an array
+		} else if (typeof setting.emailPrefixFilter === 'string') {
+			setting.emailPrefixFilter = setting.emailPrefixFilter.split(',').filter(Boolean);
+		} else if (typeof setting.email_prefix_filter === 'string') {
+			setting.emailPrefixFilter = setting.email_prefix_filter.split(',').filter(Boolean);
+		} else {
+			setting.emailPrefixFilter = [];
+		}
+
+		if (typeof setting.resendTokens === 'string') {
+			try {
+				setting.resendTokens = JSON.parse(setting.resendTokens);
+			} catch (e) {
+				setting.resendTokens = {};
+			}
+		} else if (!setting.resendTokens && typeof setting.resend_tokens === 'string') {
+			try {
+				setting.resendTokens = JSON.parse(setting.resend_tokens);
+			} catch (e) {
+				setting.resendTokens = {};
+			}
+		} else if (!setting.resendTokens) {
+			setting.resendTokens = {};
+		}
 
 		c.set?.('setting', setting);
 		return setting;
