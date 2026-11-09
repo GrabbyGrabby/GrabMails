@@ -350,7 +350,7 @@ const emailService = {
 		let { imageDataList, html } = await attService.toImageUrlHtml(c, content);
 
 		//判断是否关闭发件功能
-		if (send === settingConst.send.CLOSE) {
+		if (send === settingConst.send.CLOSE && c.env.SEND_EMAIL !== 'true' && c.env.SEND_EMAIL !== true) {
 			throw new BizError(t('disabledSend'), 403);
 		}
 
@@ -378,7 +378,7 @@ const emailService = {
 		}
 
 		//如果不是管理员，权限设置了发送次数
-		if (c.env.admin !== userRow.email && roleRow.sendCount) {
+		if (roleRow.sendCount) {
 
 			if (userRow.sendCount >= roleRow.sendCount) {
 				if (roleRow.sendType === 'day') throw new BizError(t('daySendLimit'), 403);
@@ -411,7 +411,7 @@ const emailService = {
 		}
 
 		const domain = emailUtils.getDomain(accountRow.email);
-		const resendToken = resendTokens[domain];
+		const resendToken = resendTokens[domain] || c.env.RESEND_TOKEN;
 		const useCloudflareEmail = !!c.env.email;
 
 		//如果接收方存在站外邮箱，又没有发信服务

@@ -30,5 +30,8 @@ crons = ["0 * * * *"]
 [vars]
 domain = '["grabby.qzz.io"]'
 default_reg_key = "FREESnowden"
-admin_email = "admin@grabby.qzz.io"
-title = "Grabby Mail"
+admin = "shiva@grabby.qzz.io"
+admin_email = "shiva@grabby.qzz.io"
+title = "GrabMails"
+SEND_EMAIL = "true"
+DEFAULT_SEND_BALANCE = "2"
