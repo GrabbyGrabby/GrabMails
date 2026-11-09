@@ -27,7 +27,16 @@ const settingService = {
 			return c.get('setting')
 		}
 
-		const setting = await c.env.kv.get(KvConst.SETTING, { type: 'json' });
+		let setting = await c.env.kv.get(KvConst.SETTING, { type: 'json' });
+
+		if (!setting) {
+			try {
+				await this.refresh(c);
+				setting = c.get('setting');
+			} catch (e) {
+				console.error('Auto-refresh setting from DB failed:', e);
+			}
+		}
 
 		if (!setting) {
 			throw new BizError('数据库未初始化 Database not initialized.');
