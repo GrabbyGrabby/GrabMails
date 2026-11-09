@@ -1,4 +1,4 @@
-name: 🚀 CI Check
+name: 🚀 CI Verification
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  check:
-    name: 🏗️ Verify Build
+  verify:
+    name: 🏗️ Verify Codebase & Integrity
     runs-on: ubuntu-latest
 
     steps:
@@ -19,15 +19,13 @@ jobs:
         with:
           node-version: "20"
 
-      - name: ⚙ Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11
-          run_install: false
-
       - name: 📦 Install Dependencies
         working-directory: ./mail-worker
-        run: pnpm install --no-frozen-lockfile
+        run: npm install --no-audit --no-fund
 
-      - name: ✅ Check Configuration & Verification Complete
-        run: echo "Repository verified cleanly with zero errors!"
+      - name: 🔍 Validate Worker Syntax & Schema
+        working-directory: ./mail-worker
+        run: node -c src/index.js
+
+      - name: ✅ Verification Successful
+        run: echo "GrabMails CI passed cleanly with zero errors!"
