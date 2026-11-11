@@ -305,6 +305,10 @@ async function latest() {
 
     await sleep(autoRefresh > 1 ? autoRefresh * 1000 : 3000);
 
+    if (!sysEmailScroll.value) {
+      continue
+    }
+
     const latestId = sysEmailScroll.value.latestEmail?.emailId
 
     if (autoRefresh < 2) {

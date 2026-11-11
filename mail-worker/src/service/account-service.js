@@ -27,7 +27,7 @@ const accountService = {
 		}
 
 
-		if (!email) {
+		if (!email || typeof email !== 'string') {
 			throw new BizError(t('emptyEmail'));
 		}
 
@@ -35,7 +35,7 @@ const accountService = {
 			throw new BizError(t('notEmail'));
 		}
 
-		if (!c.env.domain.includes(emailUtils.getDomain(email))) {
+		if (!emailUtils.isAllowedDomain(c.env.domain, email)) {
 			throw new BizError(t('notExistDomain'));
 		}
 
@@ -65,8 +65,13 @@ const accountService = {
 			}
 		}
 
+		await roleService.ensureDefaultRoleQuota(c);
+
 		const userRow = await userService.selectById(c, userId);
-		const roleRow = await roleService.selectById(c, userRow.type);
+		const roleRow = (await roleService.selectById(c, userRow.type)) || (await roleService.selectDefaultRole(c)) || {
+			...roleService.getDefaultQuota(c),
+			availDomain: ''
+		};
 
 		if (userRow.email !== c.env.admin) {
 
@@ -150,17 +155,21 @@ const accountService = {
 
 	async delete(c, params, userId) {
 
-		let { accountId } = params;
+		let accountId = Number(params.accountId);
 
 		const user = await userService.selectById(c, userId);
-		const accountRow = await this.selectById(c, accountId);
+		const accountRow = Number.isInteger(accountId) ? await this.selectById(c, accountId) : null;
+
+		if (!accountRow) {
+			throw new BizError(t('senderAccountNotExist'));
+		}
+
+		if (!user || accountRow.userId !== user.userId) {
+			throw new BizError(t('noUserAccount'));
+		}
 
 		if (accountRow.email === user.email) {
 			throw new BizError(t('delMyAccount'));
-		}
-
-		if (accountRow.userId !== user.userId) {
-			throw new BizError(t('noUserAccount'));
 		}
 
 		const { syncDelete } = await settingService.query(c);
@@ -225,10 +234,10 @@ const accountService = {
 
 	async setName(c, params, userId) {
 		const { name, accountId } = params
-		if (name.length > 30) {
+		if (typeof name !== 'string' || name.length > 30) {
 			throw new BizError(t('usernameLengthLimit'));
 		}
-		await orm(c).update(account).set({name}).where(and(eq(account.userId, userId),eq(account.accountId, accountId))).run();
+		await orm(c).update(account).set({name}).where(and(eq(account.userId, userId),eq(account.accountId, Number(accountId)))).run();
 	},
 
 	async allAccount(c, params) {
@@ -240,13 +249,26 @@ const accountService = {
 		num = Number(num)
 		size = Number(size)
 
-		if (size > 30) {
+		if (!Number.isFinite(size) || size < 1) {
+			size = 20;
+		} else if (size > 30) {
 			size = 30;
+		} else {
+			size = Math.floor(size);
+		}
+
+		if (!Number.isFinite(num) || num < 1) {
+			num = 1;
+		} else {
+			num = Math.floor(num);
 		}
 
 		num = (num - 1) * size;
 
 		const userRow = await userService.selectByIdIncludeDel(c, userId);
+		if (!userRow) {
+			throw new BizError(t('notExistUser'));
+		}
 
 		const list = await orm(c).select().from(account).where(and(eq(account.userId, userId),ne(account.email,userRow.email))).limit(size).offset(num);
 		const { total } = await orm(c).select({ total: count() }).from(account).where(eq(account.userId, userId)).get();
@@ -261,23 +283,25 @@ const accountService = {
 	},
 
 	async setAllReceive(c, params, userId) {
-		let a = null
 		const { accountId } = params;
-		const accountRow = await this.selectById(c, accountId);
-		if (accountRow.userId !== userId) {
+		const accountRow = await this.selectById(c, Number(accountId));
+		if (!accountRow || accountRow.userId !== userId) {
 			return;
 		}
 		await orm(c).update(account).set({ allReceive: accountConst.allReceive.CLOSE }).where(eq(account.userId, userId)).run();
-		await orm(c).update(account).set({ allReceive: accountRow.allReceive ? 0 : 1 }).where(eq(account.accountId, accountId)).run();
+		await orm(c).update(account).set({ allReceive: accountRow.allReceive ? 0 : 1 }).where(eq(account.accountId, accountRow.accountId)).run();
 	},
 
 	async setAsTop(c, params, userId) {
 		const { accountId } = params;
 		const userRow = await userService.selectById(c, userId);
-		const mainAccountRow = await accountService.selectByEmailIncludeDel(c, userRow.email);
+		const mainAccountRow = userRow ? await accountService.selectByEmailIncludeDel(c, userRow.email) : null;
+		if (!mainAccountRow) {
+			return;
+		}
 		let mainSort = mainAccountRow.sort === 0 ? 2 : mainAccountRow.sort + 1;
 		await orm(c).update(account).set({ sort: mainSort }).where(eq(account.accountId, mainAccountRow.accountId)).run();
-		await orm(c).update(account).set({ sort: mainSort - 1 }).where(and(eq(account.accountId, accountId),eq(account.userId,userId))).run();
+		await orm(c).update(account).set({ sort: mainSort - 1 }).where(and(eq(account.accountId, Number(accountId)),eq(account.userId,userId))).run();
 	}
 };
 

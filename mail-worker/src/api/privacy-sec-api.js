@@ -1,6 +1,48 @@
 import app from '../hono/hono';
 import result from '../model/result';
 import userContext from '../security/user-context';
+import verifyUtils from '../utils/verify-utils';
+
+function randomBase32Secret(byteLength = 20) {
+	const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+	const bytes = new Uint8Array(byteLength);
+	crypto.getRandomValues(bytes);
+	let bits = 0;
+	let value = 0;
+	let output = '';
+	for (const byte of bytes) {
+		value = (value << 8) | byte;
+		bits += 8;
+		while (bits >= 5) {
+			output += alphabet[(value >>> (bits - 5)) & 31];
+			bits -= 5;
+		}
+	}
+	if (bits > 0) {
+		output += alphabet[(value << (5 - bits)) & 31];
+	}
+	return output;
+}
+
+function generateRecoveryCodes(count = 8) {
+	const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+	const maxByte = 256 - (256 % chars.length);
+	const codes = [];
+	const buf = new Uint8Array(32);
+	while (codes.length < count) {
+		crypto.getRandomValues(buf);
+		let code = '';
+		for (let i = 0; i < buf.length && code.length < 8; i++) {
+			if (buf[i] < maxByte) {
+				code += chars.charAt(buf[i] % chars.length);
+			}
+		}
+		if (code.length === 8) {
+			codes.push(code);
+		}
+	}
+	return codes;
+}
 
 // In-memory / KV backed security & privacy endpoints
 
@@ -139,10 +181,12 @@ app.get('/my/backup-email', async (c) => {
 app.post('/my/backup-email', async (c) => {
 	const userId = userContext.getUserId(c);
 	const { email } = await c.req.json().catch(() => ({}));
-	if (email) {
-		await c.env.kv.put(`user_backup_email_${userId}`, email);
+	if (typeof email !== 'string' || !email.trim() || !verifyUtils.isEmail(email.trim())) {
+		return c.json(result.fail('Invalid email', 400));
 	}
-	return c.json(result.ok({ backupEmail: email }));
+	const normalizedEmail = email.trim();
+	await c.env.kv.put(`user_backup_email_${userId}`, normalizedEmail);
+	return c.json(result.ok({ backupEmail: normalizedEmail }));
 });
 
 app.delete('/my/backup-email', async (c) => {
@@ -153,7 +197,7 @@ app.delete('/my/backup-email', async (c) => {
 
 // 11. TOTP & Passkey setup endpoints
 app.post('/my/totp/setup', async (c) => {
-	return c.json(result.ok({ secret: 'MFRGGZDFMY======', qrcode: '' }));
+	return c.json(result.ok({ secret: randomBase32Secret(), qrcode: '' }));
 });
 
 app.post('/my/totp/enable', async (c) => {
@@ -165,7 +209,10 @@ app.post('/my/totp/disable', async (c) => {
 });
 
 app.post('/my/passkey/register-options', async (c) => {
-	return c.json(result.ok({ challenge: 'passkey-challenge-sample' }));
+	const bytes = new Uint8Array(32);
+	crypto.getRandomValues(bytes);
+	const challenge = btoa(String.fromCharCode(...bytes)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+	return c.json(result.ok({ challenge }));
 });
 
 app.post('/my/passkey/register', async (c) => {
@@ -188,6 +235,6 @@ app.get('/my/export', async (c) => {
 
 // 14. Recovery codes
 app.post('/my/recovery-codes/generate', async (c) => {
-	const codes = Array.from({ length: 8 }, () => Math.random().toString(36).substring(2, 8).toUpperCase());
+	const codes = generateRecoveryCodes(8);
 	return c.json(result.ok({ codes }));
 });

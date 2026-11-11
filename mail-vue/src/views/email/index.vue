@@ -80,6 +80,10 @@ async function latest() {
       continue
     }
 
+    if (!scroll.value) {
+      continue
+    }
+
     const latestId = scroll.value.latestEmail?.emailId
 
     if (!scroll.value.firstLoad && autoRefresh > 1) {
@@ -140,8 +144,10 @@ function getEmailList(emailId, size) {
   return emailStore.fetchList(full =>
     emailList(accountId, allReceive, emailId, 0, size, 0, full, emailStore.searchParams)
   ).then(data => {
-    data.latestEmail.reqAccountId = accountId;
-    data.latestEmail.allReceive = allReceive;
+    if (data?.latestEmail) {
+      data.latestEmail.reqAccountId = accountId;
+      data.latestEmail.allReceive = allReceive;
+    }
     return data;
   })
 }

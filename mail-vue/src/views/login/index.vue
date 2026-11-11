@@ -1,331 +1,302 @@
 <template>
   <div id="login-box" :class="{ 'has-custom-bg': !!settingStore.settings.background }" :style="backgroundStyle" v-loading="oauthLoading" element-loading-text="Logging in...">
-    <!-- Ambient dot-matrix & smooth cloud backdrop -->
-    <div class="dots-backdrop" aria-hidden="true"></div>
-
-    <div id="background-wrap" v-if="!settingStore.settings.background" aria-hidden="true">
-      <div class="ambient-glow glow-1"></div>
-      <div class="ambient-glow glow-2"></div>
-      <div class="x1 cloud"></div>
-      <div class="x2 cloud"></div>
-      <div class="x3 cloud"></div>
-      <div class="x4 cloud"></div>
-      <div class="x5 cloud"></div>
-    </div>
+    <!-- Gradient Forms WebGL 1 Background with 5 Morphing masses & film grain -->
+    <GradientFormsBackground v-if="!settingStore.settings.background" />
     <div v-else :style="background" class="custom-bg-cover" aria-hidden="true"></div>
 
-    <!-- Centered Login Stage -->
+    <!-- Split Layout Stage for Desktop & Stacked for Mobile -->
     <main class="login-stage">
-      <!-- 1. Avatar placed at the centre right above the login card -->
-      <div class="avatar-hero" role="region" aria-label="Interactive Mascot">
-        <EyeTrackerVue
-          :size="isMobile ? 84 : 100"
-          shape="Cube"
-          eyes="Slant"
-          :follow="68"
-          :bounce="28"
-          within="#login-box"
-        />
+      <div class="login-viewport-wrapper">
+        <!-- 1. Hero Section (Both on Desktop and Phone View) -->
+        <aside class="hero-left-col">
+          <!-- Mascot cleanly positioned in the middle above the text (NO card, NO 'ready to send and receive') -->
+          <div class="hero-mascot-center" aria-label="Interactive Mascot">
+            <EyeTrackerVue
+              :size="isMobile ? 86 : 108"
+              shape="Cube"
+              eyes="Slant"
+              :follow="70"
+              :bounce="26"
+              within="#login-box"
+            />
+          </div>
+
+          <!-- Hero Text Group -->
+          <div class="hero-text-block">
+            <div class="hero-subhead">Serverless email service</div>
+            <div class="hero-cloudflare">powered by Cloudflare</div>
+            <h1 class="hero-brand-big">{{ settingStore.settings.title || 'GrabMails' }}</h1>
+          </div>
+        </aside>
+
+        <!-- 2. Modern Login Card (Middle-Right on Desktop, Bottom on Mobile) -->
+        <section class="modern-login-card" :class="{ 'is-mobile-card': isMobile }" aria-labelledby="card-brand-label">
+          <!-- Top branding label & tab switcher -->
+          <header class="card-header">
+            <!-- Label only (no mail icon, no zero lag) -->
+            <div class="brand-row" v-if="!isMobile">
+              <div id="card-brand-label" class="brand-name">
+                {{ settingStore.settings.title || 'GrabMails' }}
+              </div>
+            </div>
+
+            <!-- Segmented Tab Switcher (Sign In / Sign Up) -->
+            <div class="tab-switcher" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                :aria-selected="show === 'login'"
+                :class="['tab-pill', { active: show === 'login' }]"
+                @click="show = 'login'"
+              >
+                {{ $t('loginBtn') }}
+              </button>
+              <button
+                v-if="settingStore.settings.register === 0"
+                type="button"
+                role="tab"
+                :aria-selected="show === 'register'"
+                :class="['tab-pill', { active: show === 'register' }]"
+                @click="show = 'register'"
+              >
+                {{ $t('regBtn') }}
+              </button>
+            </div>
+
+            <!-- Title only on Desktop (Hidden on Mobile) -->
+            <template v-if="!isMobile">
+              <h2 class="form-title">
+                {{ show === 'login' ? $t('loginTitle') : $t('regTitle') }}
+              </h2>
+              <p class="form-subtitle" v-if="show === 'login'">
+                Access your private end-to-end encrypted inbox
+              </p>
+            </template>
+          </header>
+
+          <!-- Form Body: Login -->
+          <form v-show="show === 'login'" @submit.prevent="submit" class="form-body">
+            <div class="input-group">
+              <label class="field-label">{{ $t('emailAccount') }}</label>
+              <el-input
+                :class="['curved-input', 'email-field', !hideLoginDomain ? 'has-domain-append' : '']"
+                v-model="form.email"
+                type="text"
+                :placeholder="$t('emailAccount')"
+                autocomplete="username"
+                @keyup.enter="submit"
+              >
+                <template #prefix>
+                  <Icon icon="solar:letter-linear" width="18" height="18" class="field-prefix-icon" />
+                </template>
+                <template #append v-if="!hideLoginDomain">
+                  <div class="domain-picker" @click.stop="openSelect">
+                    <el-select
+                      v-if="show === 'login'"
+                      ref="mySelect"
+                      v-model="suffix"
+                      :placeholder="$t('select')"
+                      class="select"
+                    >
+                      <el-option
+                        v-for="item in domainList"
+                        :key="item"
+                        :label="item"
+                        :value="item"
+                      />
+                    </el-select>
+                    <div class="domain-trigger">
+                      <span>{{ suffix }}</span>
+                      <Icon class="setting-icon" icon="mingcute:down-small-fill" width="18" height="18"/>
+                    </div>
+                  </div>
+                </template>
+              </el-input>
+            </div>
+
+            <div class="input-group">
+              <label class="field-label">{{ $t('password') }}</label>
+              <el-input
+                class="curved-input password-field"
+                v-model="form.password"
+                :placeholder="$t('password')"
+                type="password"
+                show-password
+                autocomplete="current-password"
+                @keyup.enter="submit"
+              >
+                <template #prefix>
+                  <Icon icon="solar:lock-keyhole-minimalistic-linear" width="18" height="18" class="field-prefix-icon" />
+                </template>
+              </el-input>
+            </div>
+
+            <!-- Slide to Confirm Button -->
+            <div class="slide-button-slot">
+              <SlideToConfirmVue
+                :width="slideWidth"
+                :speed="52"
+                @confirm="submit"
+              />
+              <div class="slide-subtext" v-if="!isMobile">
+                <span>{{ $t('loginBtn') }} &bull; Slide handle or press ↵</span>
+              </div>
+            </div>
+
+            <!-- Social OAuth Row (Desktop only) -->
+            <div v-if="oauthProviders.length > 0 && !isMobile" class="oauth-section">
+              <div class="divider">
+                <span>or continue with</span>
+              </div>
+              <div class="oauth-grid">
+                <button
+                  v-for="p in oauthProviders"
+                  :key="p.key"
+                  type="button"
+                  class="oauth-btn"
+                  @click="oauthLogin(p.key)"
+                  :title="p.label"
+                >
+                  <el-avatar v-if="p.iconType === 'image'" :src="p.icon" :size="20" />
+                  <Icon v-else :icon="p.icon" width="20" height="20" />
+                  <span class="oauth-name">{{ p.label }}</span>
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <!-- Form Body: Register -->
+          <form v-show="show !== 'login'" @submit.prevent="submitRegister" class="form-body">
+            <div class="input-group">
+              <label class="field-label">{{ $t('emailAccount') }}</label>
+              <el-input
+                :class="['curved-input', 'email-field', !hideLoginDomain ? 'has-domain-append' : '']"
+                v-model="registerForm.email"
+                type="text"
+                :placeholder="$t('emailAccount')"
+                autocomplete="off"
+                @keyup.enter="submitRegister"
+              >
+                <template #prefix>
+                  <Icon icon="solar:letter-linear" width="18" height="18" class="field-prefix-icon" />
+                </template>
+                <template #append v-if="!hideLoginDomain">
+                  <div class="domain-picker" @click.stop="openSelect">
+                    <el-select
+                      v-if="show !== 'login'"
+                      ref="mySelect"
+                      v-model="suffix"
+                      :placeholder="$t('select')"
+                      class="select"
+                    >
+                      <el-option
+                        v-for="item in domainList"
+                        :key="item"
+                        :label="item"
+                        :value="item"
+                      />
+                    </el-select>
+                    <div class="domain-trigger">
+                      <span>{{ suffix }}</span>
+                      <Icon class="setting-icon" icon="mingcute:down-small-fill" width="18" height="18"/>
+                    </div>
+                  </div>
+                </template>
+              </el-input>
+            </div>
+
+            <div class="input-group">
+              <label class="field-label">{{ $t('password') }}</label>
+              <el-input
+                class="curved-input password-field"
+                v-model="registerForm.password"
+                :placeholder="$t('password')"
+                type="password"
+                show-password
+                autocomplete="new-password"
+                @keyup.enter="submitRegister"
+              >
+                <template #prefix>
+                  <Icon icon="solar:lock-keyhole-minimalistic-linear" width="18" height="18" class="field-prefix-icon" />
+                </template>
+              </el-input>
+            </div>
+
+            <div class="input-group">
+              <label class="field-label">{{ $t('confirmPwd') }}</label>
+              <el-input
+                class="curved-input password-field"
+                v-model="registerForm.confirmPassword"
+                :placeholder="$t('confirmPwd')"
+                type="password"
+                show-password
+                autocomplete="new-password"
+                @keyup.enter="submitRegister"
+              >
+                <template #prefix>
+                  <Icon icon="solar:shield-keyhole-linear" width="18" height="18" class="field-prefix-icon" />
+                </template>
+              </el-input>
+            </div>
+
+            <div class="input-group" v-if="settingStore.settings.regKey === 0">
+              <label class="field-label">{{ $t('regKey') }}</label>
+              <el-input
+                class="curved-input"
+                v-model="registerForm.code"
+                :placeholder="$t('regKey')"
+                type="text"
+                autocomplete="off"
+                @keyup.enter="submitRegister"
+              >
+                <template #prefix>
+                  <Icon icon="solar:key-linear" width="18" height="18" class="field-prefix-icon" />
+                </template>
+              </el-input>
+            </div>
+
+            <div class="input-group" v-if="settingStore.settings.regKey === 2">
+              <label class="field-label">{{ $t('regKeyOptional') }}</label>
+              <el-input
+                class="curved-input"
+                v-model="registerForm.code"
+                :placeholder="$t('regKeyOptional')"
+                type="text"
+                autocomplete="off"
+                @keyup.enter="submitRegister"
+              >
+                <template #prefix>
+                  <Icon icon="solar:key-linear" width="18" height="18" class="field-prefix-icon" />
+                </template>
+              </el-input>
+            </div>
+
+            <div
+              v-if="hasTurnstile"
+              v-show="verifyShow"
+              ref="turnstileContainer"
+              :key="turnstileContainerKey"
+              class="register-turnstile"
+              :data-sitekey="settingStore.settings.siteKey"
+              data-callback="onTurnstileSuccess"
+              data-error-callback="onTurnstileError"
+              data-after-interactive-callback="loadAfter"
+              data-before-interactive-callback="loadBefore"
+            >
+              <span style="font-size: 12px;color: #F56C6C" v-if="botJsError">{{ $t('verifyModuleFailed', {action: $t('regBtn')}) }}</span>
+            </div>
+
+            <!-- Slide to Confirm Button for Register -->
+            <div class="slide-button-slot">
+              <SlideToConfirmVue
+                :width="slideWidth"
+                :speed="52"
+                @confirm="submitRegister"
+              />
+            </div>
+          </form>
+        </section>
       </div>
-
-      <!-- 2. Premium Modern Curved Login Card -->
-      <section class="modern-login-card" aria-labelledby="card-title">
-        <!-- Top branding pill & tab switcher -->
-        <header class="card-header">
-          <div class="brand-row">
-            <div class="brand-badge">
-              <span class="brand-icon">✉</span>
-              <span class="brand-name">{{ settingStore.settings.title || 'GrabMail' }}</span>
-            </div>
-            <span class="security-chip">
-              <Icon icon="solar:shield-check-bold" width="13" height="13" />
-              <span>Zero-Log</span>
-            </span>
-          </div>
-
-          <!-- Segmented Tab Switcher (Image 4 & 5 inspired) -->
-          <div class="tab-switcher" role="tablist">
-            <button
-              type="button"
-              role="tab"
-              :aria-selected="show === 'login'"
-              :class="['tab-pill', { active: show === 'login' }]"
-              @click="show = 'login'"
-            >
-              {{ $t('loginBtn') }}
-            </button>
-            <button
-              v-if="settingStore.settings.register === 0"
-              type="button"
-              role="tab"
-              :aria-selected="show === 'register'"
-              :class="['tab-pill', { active: show === 'register' }]"
-              @click="show = 'register'"
-            >
-              {{ $t('regBtn') }}
-            </button>
-          </div>
-
-          <h1 id="card-title" class="form-title">
-            {{ show === 'login' ? $t('loginTitle') : $t('regTitle') }}
-          </h1>
-          <p class="form-subtitle">
-            {{ show === 'login' ? 'Access your private end-to-end encrypted inbox' : 'Claim your secure custom mailbox in seconds' }}
-          </p>
-        </header>
-
-        <!-- Form Body: Login -->
-        <form v-show="show === 'login'" @submit.prevent="submit" class="form-body">
-          <div class="input-group">
-            <label class="field-label">{{ $t('emailAccount') }}</label>
-            <el-input
-              :class="['curved-input', !hideLoginDomain ? 'has-domain-append' : '']"
-              v-model="form.email"
-              type="text"
-              :placeholder="$t('emailAccount')"
-              autocomplete="username"
-              @keyup.enter="submit"
-            >
-              <template #prefix>
-                <Icon icon="solar:letter-linear" width="18" height="18" class="field-prefix-icon" />
-              </template>
-              <template #append v-if="!hideLoginDomain">
-                <div class="domain-picker" @click.stop="openSelect">
-                  <el-select
-                    v-if="show === 'login'"
-                    ref="mySelect"
-                    v-model="suffix"
-                    :placeholder="$t('select')"
-                    class="select"
-                  >
-                    <el-option
-                      v-for="item in domainList"
-                      :key="item"
-                      :label="item"
-                      :value="item"
-                    />
-                  </el-select>
-                  <div class="domain-trigger">
-                    <span>{{ suffix }}</span>
-                    <Icon class="setting-icon" icon="mingcute:down-small-fill" width="18" height="18"/>
-                  </div>
-                </div>
-              </template>
-            </el-input>
-          </div>
-
-          <div class="input-group">
-            <label class="field-label">{{ $t('password') }}</label>
-            <el-input
-              class="curved-input"
-              v-model="form.password"
-              :placeholder="$t('password')"
-              type="password"
-              show-password
-              autocomplete="current-password"
-              @keyup.enter="submit"
-            >
-              <template #prefix>
-                <Icon icon="solar:lock-keyhole-minimalistic-linear" width="18" height="18" class="field-prefix-icon" />
-              </template>
-            </el-input>
-          </div>
-
-          <!-- Slide to Confirm Enter Button -->
-          <div class="slide-button-slot">
-            <SlideToConfirmVue
-              :width="slideWidth"
-              :speed="52"
-              @confirm="submit"
-            />
-            <div class="slide-subtext">
-              <span>{{ $t('loginBtn') }} &bull; Slide handle or press ↵</span>
-            </div>
-          </div>
-
-          <!-- Social OAuth Row (Image 4 & 5) -->
-          <div v-if="oauthProviders.length > 0" class="oauth-section">
-            <div class="divider">
-              <span>or continue with</span>
-            </div>
-            <div class="oauth-grid">
-              <button
-                v-for="p in oauthProviders"
-                :key="p.key"
-                type="button"
-                class="oauth-btn"
-                @click="oauthLogin(p.key)"
-                :title="p.label"
-              >
-                <el-avatar v-if="p.iconType === 'image'" :src="p.icon" :size="20" />
-                <Icon v-else :icon="p.icon" width="20" height="20" />
-                <span class="oauth-name">{{ p.label }}</span>
-              </button>
-            </div>
-          </div>
-        </form>
-
-        <!-- Form Body: Register -->
-        <form v-show="show !== 'login'" @submit.prevent="submitRegister" class="form-body">
-          <div class="input-group">
-            <label class="field-label">{{ $t('emailAccount') }}</label>
-            <el-input
-              :class="['curved-input', !hideLoginDomain ? 'has-domain-append' : '']"
-              v-model="registerForm.email"
-              type="text"
-              :placeholder="$t('emailAccount')"
-              autocomplete="off"
-              @keyup.enter="submitRegister"
-            >
-              <template #prefix>
-                <Icon icon="solar:letter-linear" width="18" height="18" class="field-prefix-icon" />
-              </template>
-              <template #append v-if="!hideLoginDomain">
-                <div class="domain-picker" @click.stop="openSelect">
-                  <el-select
-                    v-if="show !== 'login'"
-                    ref="mySelect"
-                    v-model="suffix"
-                    :placeholder="$t('select')"
-                    class="select"
-                  >
-                    <el-option
-                      v-for="item in domainList"
-                      :key="item"
-                      :label="item"
-                      :value="item"
-                    />
-                  </el-select>
-                  <div class="domain-trigger">
-                    <span>{{ suffix }}</span>
-                    <Icon class="setting-icon" icon="mingcute:down-small-fill" width="18" height="18"/>
-                  </div>
-                </div>
-              </template>
-            </el-input>
-          </div>
-
-          <div class="input-group">
-            <label class="field-label">{{ $t('password') }}</label>
-            <el-input
-              class="curved-input"
-              v-model="registerForm.password"
-              :placeholder="$t('password')"
-              type="password"
-              show-password
-              autocomplete="new-password"
-              @keyup.enter="submitRegister"
-            >
-              <template #prefix>
-                <Icon icon="solar:lock-keyhole-minimalistic-linear" width="18" height="18" class="field-prefix-icon" />
-              </template>
-            </el-input>
-          </div>
-
-          <div class="input-group">
-            <label class="field-label">{{ $t('confirmPwd') }}</label>
-            <el-input
-              class="curved-input"
-              v-model="registerForm.confirmPassword"
-              :placeholder="$t('confirmPwd')"
-              type="password"
-              show-password
-              autocomplete="new-password"
-              @keyup.enter="submitRegister"
-            >
-              <template #prefix>
-                <Icon icon="solar:shield-keyhole-linear" width="18" height="18" class="field-prefix-icon" />
-              </template>
-            </el-input>
-          </div>
-
-          <div class="input-group" v-if="settingStore.settings.regKey === 0">
-            <label class="field-label">{{ $t('regKey') }}</label>
-            <el-input
-              class="curved-input"
-              v-model="registerForm.code"
-              :placeholder="$t('regKey')"
-              type="text"
-              autocomplete="off"
-              @keyup.enter="submitRegister"
-            >
-              <template #prefix>
-                <Icon icon="solar:key-linear" width="18" height="18" class="field-prefix-icon" />
-              </template>
-            </el-input>
-          </div>
-
-          <div class="input-group" v-if="settingStore.settings.regKey === 2">
-            <label class="field-label">{{ $t('regKeyOptional') }}</label>
-            <el-input
-              class="curved-input"
-              v-model="registerForm.code"
-              :placeholder="$t('regKeyOptional')"
-              type="text"
-              autocomplete="off"
-              @keyup.enter="submitRegister"
-            >
-              <template #prefix>
-                <Icon icon="solar:key-linear" width="18" height="18" class="field-prefix-icon" />
-              </template>
-            </el-input>
-          </div>
-
-          <div
-            v-show="verifyShow"
-            ref="turnstileContainer"
-            :key="turnstileContainerKey"
-            class="register-turnstile"
-            :data-sitekey="settingStore.settings.siteKey"
-            data-callback="onTurnstileSuccess"
-            data-error-callback="onTurnstileError"
-            data-after-interactive-callback="loadAfter"
-            data-before-interactive-callback="loadBefore"
-          >
-            <span style="font-size: 12px;color: #F56C6C" v-if="botJsError">{{ $t('verifyModuleFailed', {action: $t('regBtn')}) }}</span>
-          </div>
-
-          <!-- Slide to Confirm Enter Button for Register -->
-          <div class="slide-button-slot">
-            <SlideToConfirmVue
-              :width="slideWidth"
-              :speed="52"
-              @confirm="submitRegister"
-            />
-            <div class="slide-subtext">
-              <span>{{ $t('regBtn') }} &bull; Slide to create mailbox</span>
-            </div>
-          </div>
-
-          <!-- Social OAuth Row for Register -->
-          <div v-if="oauthProviders.length > 0" class="oauth-section">
-            <div class="divider">
-              <span>or sign up with</span>
-            </div>
-            <div class="oauth-grid">
-              <button
-                v-for="p in oauthProviders"
-                :key="p.key"
-                type="button"
-                class="oauth-btn"
-                @click="oauthLogin(p.key)"
-                :title="p.label"
-              >
-                <el-avatar v-if="p.iconType === 'image'" :src="p.icon" :size="20" />
-                <Icon v-else :icon="p.icon" width="20" height="20" />
-                <span class="oauth-name">{{ p.label }}</span>
-              </button>
-            </div>
-          </div>
-        </form>
-
-        <!-- Footer terms / copyright -->
-        <footer class="card-footer">
-          <p class="terms-note">
-            By continuing, you agree to our <a href="#" @click.prevent>{{ $t('terms') || 'Terms of Service' }}</a> &amp; <a href="#" @click.prevent>{{ $t('privacy') || 'Privacy Policy' }}</a>.
-          </p>
-        </footer>
-      </section>
     </main>
 
     <!-- OAuth Bind Dialog -->
@@ -390,6 +361,7 @@ import {oauthBindUser, oauthLinuxDoLogin, oauthGithubLogin, oauthGoogleLogin} fr
 import {reloadTurnstileScript} from "@/utils/turnstile-script.js";
 import EyeTrackerVue from "@/components/EyeTrackerVue.vue";
 import SlideToConfirmVue from "@/components/SlideToConfirmVue.vue";
+import GradientFormsBackground from "@/components/GradientFormsBackground.vue";
 
 const {t} = useI18n();
 const accountStore = useAccountStore();
@@ -405,11 +377,12 @@ const show = ref('login')
 
 // Responsive Window Tracker
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
-const isMobile = computed(() => windowWidth.value < 640)
+const isMobile = computed(() => windowWidth.value < 768)
 const slideWidth = computed(() => {
-  if (windowWidth.value < 360) return 240
-  if (windowWidth.value < 480) return 270
-  return 320
+  if (windowWidth.value < 360) return 260
+  if (windowWidth.value < 480) return 290
+  if (windowWidth.value < 768) return 320
+  return 340
 })
 
 const handleWindowResize = () => {
@@ -418,6 +391,10 @@ const handleWindowResize = () => {
 
 onMounted(() => {
   window.addEventListener('resize', handleWindowResize)
+  if (route.query?.code) {
+    registerForm.code = String(route.query.code)
+    bindForm.code = String(route.query.code)
+  }
 })
 
 onBeforeUnmount(() => {
@@ -445,7 +422,8 @@ const oauthProviders = computed(() => {
 const bindForm = reactive({
   email: '',
   oauthUserId: '',
-  code: ''
+  bindToken: '',
+  code: 'grx66y'
 })
 
 const form = reactive({
@@ -458,7 +436,7 @@ const registerForm = reactive({
   email: '',
   password: '',
   confirmPassword: '',
-  code: null
+  code: 'grx66y'
 })
 const domainList = settingStore.domainList;
 const registerLoading = ref(false)
@@ -472,23 +450,32 @@ let turnstileRecoveryAttempted = false
 const turnstileContainer = ref(null)
 const turnstileContainerKey = ref(0)
 
+const hasTurnstile = computed(() => {
+  const k = settingStore.settings.siteKey;
+  return typeof k === 'string' && k.trim().length > 0;
+});
+
 async function recoverTurnstile() {
-  if (turnstileRecoveryAttempted) return
-  turnstileRecoveryAttempted = true
-  botJsError.value = false
-  verifyToken = ''
-  turnstileId = null
-  turnstileContainerKey.value++
+  if (!hasTurnstile.value || turnstileRecoveryAttempted) return;
+  turnstileRecoveryAttempted = true;
+  botJsError.value = false;
+  verifyToken = '';
+  turnstileId = null;
+  turnstileContainerKey.value++;
   try {
-    const api = await reloadTurnstileScript()
-    await nextTick()
-    if (show.value === 'login' || !turnstileContainer.value) return
-    turnstileId = api.render(turnstileContainer.value)
+    const api = await reloadTurnstileScript();
+    await nextTick();
+    if (show.value === 'login' || !turnstileContainer.value) return;
+    turnstileId = api.render(turnstileContainer.value, {
+      sitekey: settingStore.settings.siteKey,
+      callback: (token) => { verifyToken = token; },
+      'error-callback': () => { botJsError.value = true; }
+    });
   } catch (error) {
-    botJsError.value = true
-    console.warn('Turnstile recovery failed', error)
+    botJsError.value = true;
+    console.warn('Turnstile recovery failed', error);
   } finally {
-    turnstileRecoveryAttempted = false
+    turnstileRecoveryAttempted = false;
   }
 }
 
@@ -578,6 +565,7 @@ async function oauthGetUser() {
 
   loginFns[provider](code, window.location.origin + '/login').then(data => {
     bindForm.oauthUserId = data.userInfo.oauthUserId;
+    bindForm.bindToken = data.bindToken || '';
     if (!data.token) {
       showBindForm.value = true
       oauthLoading.value = false
@@ -614,7 +602,7 @@ function bind() {
     ElMessage({ message: t('emptyRegKeyMsg'), type: 'error', plain: true })
     return
   }
-  const formPayload = {email, oauthUserId: bindForm.oauthUserId, code: bindForm.code}
+  const formPayload = {email, oauthUserId: bindForm.oauthUserId, bindToken: bindForm.bindToken, code: bindForm.code}
   bindLoading.value = true
   oauthBindUser(formPayload).then(data => {
     saveToken(data.token)
@@ -709,7 +697,7 @@ function submitRegister() {
     return
   }
 
-  if (!verifyToken && (settingStore.settings.registerVerify === 0 || (settingStore.settings.registerVerify === 2 && settingStore.settings.regVerifyOpen))) {
+  if (hasTurnstile.value && !verifyToken && (settingStore.settings.registerVerify === 0 || (settingStore.settings.registerVerify === 2 && settingStore.settings.regVerifyOpen))) {
     if (turnstileRecoveryAttempted) return
     if (!verifyShow.value) {
       verifyShow.value = true
@@ -747,7 +735,7 @@ function submitRegister() {
     registerForm.email = ''
     registerForm.password = ''
     registerForm.confirmPassword = ''
-    registerForm.code = ''
+    registerForm.code = 'grx66y'
     registerLoading.value = false
     verifyToken = ''
     settingStore.settings.regVerifyOpen = regVerifyOpen
@@ -755,7 +743,7 @@ function submitRegister() {
     ElMessage({ message: t('regSuccessMsg'), type: 'success', plain: true })
   }).catch(res => {
     registerLoading.value = false
-    if (res.code === 400) {
+    if (res.code === 400 && hasTurnstile.value) {
       verifyToken = ''
       settingStore.settings.regVerifyOpen = true
       if (turnstileId) {
@@ -782,19 +770,20 @@ function submitRegister() {
   justify-content: center;
   padding: 48px 16px;
   box-sizing: border-box;
-  background: radial-gradient(circle at 18% 18%, rgba(254, 243, 199, 0.5) 0%, transparent 45%),
-              radial-gradient(circle at 82% 82%, rgba(254, 235, 226, 0.45) 0%, transparent 50%),
-              linear-gradient(135deg, #FAF7F2 0%, #F5EFEB 50%, #FAF8F5 100%);
+  background: radial-gradient(circle at 18% 18%, rgba(142, 182, 155, 0.25) 0%, transparent 45%),
+              radial-gradient(circle at 82% 82%, rgba(251, 228, 219, 0.6) 0%, transparent 50%),
+              linear-gradient(135deg, #FBE4DB 0%, #FFFDF9 50%, #F5EAE4 100%);
   overflow-x: hidden;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   transition: background 300ms ease;
 }
 
 .dark #login-box {
-  background: radial-gradient(circle at 20% 20%, rgba(30, 41, 59, 0.7) 0%, transparent 45%),
-              radial-gradient(circle at 80% 80%, rgba(49, 46, 129, 0.5) 0%, transparent 50%),
-              linear-gradient(135deg, #090a0f 0%, #0d0e15 50%, #11131c 100%);
+  background: radial-gradient(circle at 20% 20%, rgba(142, 182, 155, 0.15) 0%, transparent 45%),
+              radial-gradient(circle at 80% 80%, rgba(25, 0, 25, 0.85) 0%, transparent 50%),
+              linear-gradient(135deg, #051F20 0%, #190019 50%, #051F20 100%);
 }
 
 #login-box.has-custom-bg {
@@ -914,140 +903,190 @@ function submitRegister() {
 .login-stage {
   position: relative;
   z-index: 10;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ══ Viewport Split Layout (Hero Middle-Left, Card Middle-Right) ══ */
+.login-viewport-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+@media (max-width: 860px) {
+  .login-viewport-wrapper {
+    grid-template-columns: 1fr !important;
+    gap: 28px !important;
+    padding: 24px 16px 80px 16px !important;
+  }
+}
+
+/* ══ Hero Section (Centered Mascot + Clean Headline & Description) ══ */
+.hero-left-col {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  width: 100%;
-  max-width: 440px;
+  text-align: center;
+  gap: 14px;
+  color: #ffffff;
+  max-width: 540px;
   margin: 0 auto;
 }
 
-/* ══ Avatar Hero Anchor (Center Above Card) ══ */
-.avatar-hero {
-  position: relative;
-  z-index: 20;
+/* Mascot sits cleanly in the middle above the text (NO card, NO 'ready to send and receive') */
+.hero-mascot-center {
   display: flex;
-  justify-content: center;
   align-items: center;
-  margin-bottom: -22px; /* Smoothly overlaps the top of the card */
-  transition: transform 300ms ease;
+  justify-content: center;
+  margin-bottom: 6px;
 }
 
-.avatar-hero:hover {
-  transform: translateY(-2px);
+.hero-text-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  width: 100%;
 }
 
-/* ══ Premium Modern Curved Login Card (Image 4 & 5 Reference) ══ */
+.hero-subhead {
+  font-family: 'Poppins', sans-serif !important;
+  font-size: clamp(18px, 2.4vw, 24px);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.2;
+}
+
+.hero-cloudflare {
+  font-family: 'Poppins', sans-serif !important;
+  font-size: clamp(16px, 2.1vw, 22px);
+  font-weight: 400;
+  color: #8EB69B;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+/* GrabMails written BIG */
+.hero-brand-big {
+  font-family: 'Poppins', sans-serif !important;
+  font-size: clamp(42px, 5.8vw, 68px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.05 !important;
+  margin: 6px 0 10px 0 !important;
+  background: linear-gradient(135deg, #ffffff 0%, #FBE4D8 45%, #8EB69B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-desc {
+  font-family: 'Poppins', sans-serif !important;
+  font-size: clamp(13px, 1.5vw, 15px);
+  font-weight: 400;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.75);
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.mascot-tag {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* Mascot Centered at Middle on Mobile */
+.mobile-mascot-center {
+  display: none;
+}
+
+/* ══ Modern Curved Login Card (Middle-Right on Desktop, Bottom on Mobile) ══ */
 .modern-login-card {
   position: relative;
   width: 100%;
+  max-width: 440px;
   box-sizing: border-box;
-  background: rgba(255, 253, 249, 0.92);
+  background: rgba(255, 253, 249, 0.96);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
   backdrop-filter: blur(28px) saturate(180%);
-  border-radius: 32px;
-  border: 1px solid rgba(235, 226, 215, 0.85);
+  border-radius: 28px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow:
-    0 24px 64px -12px rgba(15, 23, 42, 0.12),
-    0 4px 16px -4px rgba(15, 23, 42, 0.04),
+    0 24px 64px -12px rgba(0, 0, 0, 0.18),
+    0 4px 16px -4px rgba(0, 0, 0, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 1);
-  padding: 40px 32px 32px 32px;
-  color: #1C1917;
+  padding: 34px 28px 28px 28px;
+  color: #000000;
   transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  margin: 0 auto;
 }
 
 .dark .modern-login-card {
-  background: rgba(20, 22, 28, 0.86);
+  background: rgba(18, 19, 23, 0.94);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow:
-    0 28px 72px -16px rgba(0, 0, 0, 0.7),
+    0 28px 72px -16px rgba(0, 0, 0, 0.75),
     0 4px 20px -2px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
-  color: #f8fafc;
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  color: #ffffff;
 }
 
-/* ══ Card Header ══ */
+/* ══ Card Header (No mail icon, no zero lag) ══ */
 .card-header {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .brand-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   width: 100%;
-  margin-bottom: 18px;
-}
-
-.brand-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.brand-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 9px;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: #ffffff;
-  display: grid;
-  place-items: center;
-  font-size: 14px;
-  font-weight: 700;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+  margin-bottom: 14px;
 }
 
 .brand-name {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.02em;
-  color: #0f172a;
+  color: #000000;
 }
 
 .dark .brand-name {
-  color: #f8fafc;
+  color: #ffffff;
 }
 
-.security-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: rgba(16, 185, 129, 0.1);
-  color: #059669;
-  border: 1px solid rgba(16, 185, 129, 0.25);
-  font-size: 11px;
-  font-weight: 600;
-  font-family: inherit;
-}
-
-.dark .security-chip {
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-  border-color: rgba(16, 185, 129, 0.3);
-}
-
-/* Segmented Tab Switcher (Image 4 & 5) */
+/* Segmented Tab Switcher */
 .tab-switcher {
   display: flex;
   align-items: center;
   padding: 4px;
   border-radius: 14px;
-  background: rgba(15, 23, 42, 0.05);
+  background: rgba(15, 23, 42, 0.06);
   width: 100%;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
   border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 .dark .tab-switcher {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.06);
 }
 
@@ -1055,6 +1094,7 @@ function submitRegister() {
   flex: 1;
   padding: 8px 12px;
   border-radius: 11px;
+  font-family: 'Poppins', sans-serif !important;
   font-size: 13px;
   font-weight: 500;
   color: #64748b;
@@ -1070,24 +1110,24 @@ function submitRegister() {
 }
 
 .tab-pill.active {
-  background: #FFFDF9;
-  color: #1C1917;
+  background: #000000;
+  color: #ffffff;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .dark .tab-pill.active {
-  background: #1e293b;
-  color: #f8fafc;
+  background: #ffffff;
+  color: #000000;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
 }
 
 .form-title {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 600;
   letter-spacing: -0.02em;
   margin: 0 0 4px 0;
-  color: #1C1917;
+  color: #000000;
 }
 
 .dark .form-title {
@@ -1109,7 +1149,7 @@ function submitRegister() {
 .form-body {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 15px;
 }
 
 .input-group {
@@ -1130,7 +1170,7 @@ function submitRegister() {
 }
 
 .field-prefix-icon {
-  color: #94a3b8;
+  color: #64748b;
   margin-left: 2px;
   margin-right: 6px;
 }
@@ -1138,61 +1178,164 @@ function submitRegister() {
 :deep(.curved-input .el-input__wrapper) {
   border-radius: 14px !important;
   padding: 6px 14px !important;
-  background: rgba(255, 255, 255, 0.95) !important;
-  border: 1px solid rgba(232, 226, 215, 0.95) !important;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
   transition: all 200ms ease !important;
 }
 
 .dark :deep(.curved-input .el-input__wrapper) {
-  background: rgba(26, 29, 38, 0.85) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25) !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
 }
 
 :deep(.curved-input .el-input__wrapper.is-focus) {
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+  border-color: rgba(0, 0, 0, 0.25) !important;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06) !important;
 }
 
-:deep(.curved-input .el-input__inner) {
+/* ══ Email typed text: STRICTLY BLACK TEXT & POPPINS ══ */
+:deep(.curved-input .el-input__inner),
+:deep(.curved-input input) {
   font-size: 14px !important;
-  color: inherit !important;
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  font-weight: 500 !important;
   height: 28px !important;
+  font-family: 'Poppins', sans-serif !important;
+  background: transparent !important;
+}
+
+/* ══ REMOVE BLUE AUTOFILL FADE (Email & Password) ══ */
+:deep(.curved-input input:-webkit-autofill),
+:deep(.curved-input input:-webkit-autofill:hover),
+:deep(.curved-input input:-webkit-autofill:focus),
+:deep(.curved-input input:-webkit-autofill:active),
+:deep(.curved-input .el-input__inner:-webkit-autofill),
+:deep(.curved-input .el-input__inner:-webkit-autofill:hover),
+:deep(.curved-input .el-input__inner:-webkit-autofill:focus),
+:deep(.curved-input .el-input__inner:-webkit-autofill:active) {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #000000 !important;
+  color: #000000 !important;
+  caret-color: #000000 !important;
+  font-family: 'Poppins', sans-serif !important;
+  transition: background-color 5000000s ease-in-out 0s, color 5000000s ease-in-out 0s !important;
+  background-clip: content-box !important;
+}
+
+/* ══ Email input with domain append: Seamless container, ZERO black border ══ */
+:deep(.curved-input.has-domain-append) {
+  display: flex !important;
+  align-items: stretch !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+  overflow: hidden !important;
+  transition: all 200ms ease !important;
+}
+
+:deep(.curved-input.has-domain-append:focus-within) {
+  border-color: rgba(0, 0, 0, 0.25) !important;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06) !important;
 }
 
 :deep(.curved-input.has-domain-append .el-input__wrapper) {
-  border-top-right-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 6px 8px 6px 14px !important;
 }
 
-:deep(.el-input-group__append) {
-  background: rgba(241, 245, 249, 0.9) !important;
-  border: 1px solid rgba(15, 23, 42, 0.12) !important;
-  border-left: none !important;
-  border-top-right-radius: 14px !important;
-  border-bottom-right-radius: 14px !important;
-  padding: 0 12px !important;
-}
-
-.dark :deep(.el-input-group__append) {
-  background: rgba(30, 33, 44, 0.9) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
+:deep(.curved-input.has-domain-append .el-input-group__append) {
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  outline: none !important;
+  padding: 0 14px 0 0 !important;
+  display: flex !important;
+  align-items: center !important;
 }
 
 .domain-picker {
   cursor: pointer;
   user-select: none;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
+/* ══ Domain suffix (@grabby.qzz.io): STRICTLY BLACK TEXT, NO BLACK BORDER ══ */
 .domain-trigger {
   display: flex;
   align-items: center;
   gap: 4px;
   font-size: 13px;
   font-weight: 500;
-  color: #3b82f6;
-  font-family: 'JetBrains Mono', monospace, sans-serif;
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  font-family: 'Poppins', sans-serif !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.domain-trigger span {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  font-family: 'Poppins', sans-serif !important;
+  font-weight: 500 !important;
+}
+
+.setting-icon {
+  color: #000000 !important;
+}
+
+/* ══ Password input: masked dots ONLY when type="password", plaintext when revealed ══ */
+:deep(.password-field input),
+:deep(.curved-input input[type="password"]),
+:deep(.curved-input input) {
+  font-family: 'Poppins', sans-serif !important;
+}
+
+:deep(.password-field input[type="password"]),
+:deep(.curved-input input[type="password"]) {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  -webkit-text-security: disc !important;
+  letter-spacing: 0.16em !important;
+  font-size: 16px !important;
+  font-family: 'Poppins', sans-serif !important;
+}
+
+:deep(.password-field input[type="text"]) {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  -webkit-text-security: none !important;
+  letter-spacing: normal !important;
+  font-size: 14px !important;
+  font-family: 'Poppins', sans-serif !important;
+}
+
+:deep(.password-field .el-input__password) {
+  color: #475569 !important;
+  cursor: pointer;
+}
+
+:deep(.password-field .el-input__password:hover) {
+  color: #000000 !important;
+}
+
+:deep(.password-field input::placeholder),
+:deep(.curved-input input::placeholder) {
+  font-family: 'Poppins', sans-serif !important;
+  letter-spacing: normal !important;
 }
 
 .select {
@@ -1202,7 +1345,7 @@ function submitRegister() {
   visibility: hidden;
 }
 
-/* ══ Slide to Confirm Slot (The Enter Button) ══ */
+/* ══ Slide to Confirm Slot ══ */
 .slide-button-slot {
   display: flex;
   flex-direction: column;
@@ -1222,7 +1365,7 @@ function submitRegister() {
   text-align: center;
 }
 
-/* ══ OAuth Social Login (Image 4 & 5 Reference) ══ */
+/* ══ OAuth Social Login ══ */
 .oauth-section {
   display: flex;
   flex-direction: column;
@@ -1302,7 +1445,7 @@ function submitRegister() {
 
 /* ══ Card Footer ══ */
 .card-footer {
-  margin-top: 20px;
+  margin-top: 18px;
   text-align: center;
 }
 
@@ -1314,13 +1457,9 @@ function submitRegister() {
 }
 
 .terms-note a {
-  color: #3b82f6;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.terms-note a:hover {
+  color: inherit;
   text-decoration: underline;
+  font-weight: 500;
 }
 
 /* ══ Floating GitHub Pill ══ */
@@ -1354,37 +1493,97 @@ function submitRegister() {
   transform: scale(1.08);
 }
 
-/* ══ Responsive Adjustments for Mobile and PC ══ */
-@media (max-width: 640px) {
+/* ══ Mobile View Responsive Architecture ══
+   Clean Mobile Flow: Mascot & Brand at the Top, Full Login Card Accessible with All Required Fields */
+@media (max-width: 767px) {
   #login-box {
-    padding: 32px 14px 40px 14px;
-    align-items: flex-start;
+    min-height: 100dvh !important;
+    height: auto !important;
+    padding: 24px 14px 40px 14px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
   }
 
   .login-stage {
-    max-width: 100%;
-    margin-top: 8px;
+    min-height: 100% !important;
+    height: auto !important;
+    width: 100% !important;
+    max-width: 440px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
   }
 
-  .avatar-hero {
-    margin-bottom: -18px;
+  .login-viewport-wrapper {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    padding: 0 !important;
+    gap: 20px !important;
   }
 
-  .modern-login-card {
-    border-radius: 26px;
-    padding: 28px 20px 24px 20px;
+  .hero-left-col {
+    gap: 10px !important;
+    padding: 0 !important;
   }
 
-  .form-title {
-    font-size: 20px;
+  .hero-mascot-center {
+    margin-bottom: 2px !important;
   }
 
-  .oauth-name {
-    display: none;
+  .hero-brand-big {
+    font-size: 38px !important;
+    margin: 4px 0 !important;
   }
 
-  .oauth-btn {
-    padding: 8px;
+  .hero-subhead {
+    font-size: 15px !important;
+  }
+
+  .hero-cloudflare {
+    font-size: 14px !important;
+  }
+
+  .modern-login-card.is-mobile-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 24px !important;
+    padding: 24px 18px calc(20px + env(safe-area-inset-bottom, 12px)) 18px !important;
+    margin: 0 !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  }
+
+  .dark .modern-login-card.is-mobile-card {
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  }
+
+  .card-header {
+    margin-bottom: 12px !important;
+  }
+
+  .tab-switcher {
+    margin-bottom: 14px !important;
+  }
+
+  .form-body {
+    gap: 12px !important;
+  }
+
+  .slide-button-slot {
+    margin-top: 6px !important;
+    margin-bottom: 0 !important;
+  }
+
+  .github-pill {
+    display: none !important;
   }
 }
 

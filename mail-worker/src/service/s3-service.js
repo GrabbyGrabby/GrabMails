@@ -83,13 +83,18 @@ const s3Service = {
 			Key: key
 		}));
 
-		return new Response(result.Body, {
-			headers: {
-				'Content-Type': result.ContentType || 'application/octet-stream',
-				'Content-Disposition': result.ContentDisposition || null,
-				'Cache-Control': result.CacheControl || null
-			}
-		});
+		const headers = {
+			'Content-Type': result.ContentType || 'application/octet-stream',
+			'X-Content-Type-Options': 'nosniff'
+		};
+		if (result.ContentDisposition) {
+			headers['Content-Disposition'] = result.ContentDisposition;
+		}
+		if (result.CacheControl) {
+			headers['Cache-Control'] = result.CacheControl;
+		}
+
+		return new Response(result.Body, { headers });
 	},
 
 

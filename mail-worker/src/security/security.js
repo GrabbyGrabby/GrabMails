@@ -1,6 +1,7 @@
 import BizError from '../error/biz-error';
 import constant from '../const/constant';
 import jwtUtils from '../utils/jwt-utils';
+import cryptoUtils from '../utils/crypto-utils';
 import KvConst from '../const/kv-const';
 import dayjs from 'dayjs';
 import userService from '../service/user-service';
@@ -105,7 +106,7 @@ app.use('*', async (c, next) => {
 
 		const userPublicToken = await c.env.kv.get(KvConst.PUBLIC_KEY);
 		const publicToken = c.req.header(constant.TOKEN_HEADER);
-		if (publicToken !== userPublicToken) {
+		if (!userPublicToken || !publicToken || !(await cryptoUtils.timingSafeEqual(publicToken, userPublicToken))) {
 			throw new BizError(t('publicTokenFail'), 401);
 		}
 		return await next();
@@ -116,14 +117,14 @@ app.use('*', async (c, next) => {
 
 	const result = await jwtUtils.verifyToken(c, jwt);
 
-	if (!result) {
+	if (!result || result.purpose || !result.userId || !result.token) {
 		throw new BizError(t('authExpired'), 401);
 	}
 
 	const { userId, token } = result;
 	const authInfo = await c.env.kv.get(KvConst.AUTH_INFO + userId, { type: 'json' });
 
-	if (!authInfo) {
+	if (!authInfo || !Array.isArray(authInfo.tokens)) {
 		throw new BizError(t('authExpired'), 401);
 	}
 

@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+﻿import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 
 /* ══ Eye tracker ═══════════════════════════════════════════
    A ball with two eyes that watches your cursor, wherever it is
@@ -367,7 +367,7 @@ export function Watcher({
        cursor crossing the page read as noise. The reach is
        measured against that card, so the eyes arrive at the rim
        as you arrive at its edge. */
-    const frame = el.closest<HTMLElement>(within ?? ".bench-card, .dtl-block, .board, .sf-thumb") ?? el;
+    const frame = within ? (document.querySelector<HTMLElement>(within) ?? document.body) : document.body;
     const aim = (e: PointerEvent) => {
       const f = frame.getBoundingClientRect();
       if (e.clientX < f.left || e.clientX > f.right || e.clientY < f.top || e.clientY > f.bottom) {
@@ -379,7 +379,7 @@ export function Watcher({
       const dx = e.clientX - (r.left + r.width / 2);
       const dy = e.clientY - (r.top + r.height / 2);
       const d = Math.hypot(dx, dy) || 1;
-      const reach = Math.max(60, Math.min(f.width, f.height) * 0.28);
+      const reach = Math.max(120, Math.min(f.width, f.height) * 0.35);
       const far = Math.min(0.85, Math.tanh(d / reach) * (clamp(knobs.current.follow, 0, 100) / 100) * 1.5);
       t.tx = (dx / d) * far;
       t.ty = (dy / d) * far;

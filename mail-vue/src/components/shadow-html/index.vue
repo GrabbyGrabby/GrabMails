@@ -6,6 +6,7 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
+import { sanitizeEmailHtml } from '@/utils/email-html.js'
 
 const props = defineProps({
   html: {
@@ -21,61 +22,68 @@ let shadowRoot = null
 function updateContent() {
   if (!shadowRoot) return;
 
-  // 1. 提取 <body> 的 style 属性（如果存在）
-  const bodyStyleRegex = /<body[^>]*style="([^"]*)"[^>]*>/i;
-  const bodyStyleMatch = props.html.match(bodyStyleRegex);
-  const bodyStyle = bodyStyleMatch ? bodyStyleMatch[1] : '';
+  const cleanHtml = sanitizeEmailHtml(props.html || '');
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(cleanHtml, 'text/html');
+  const bodyStyle = doc.body?.getAttribute('style') || '';
 
-  // 2. 移除 <body> 标签（保留内容）
-  const cleanedHtml = props.html.replace(/<\/?body[^>]*>/gi, '');
+  shadowRoot.innerHTML = '';
 
-  // 3. 将 body 的 style 应用到 .shadow-content
-  shadowRoot.innerHTML = `
-    <style>
-      :host {
-        all: initial;
-        width: 100%;
-        height: 100%;
-        font-family: Inter, 'Helvetica Neue', Helvetica, 'PingFang SC',
-                    'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
-        font-size: 14px;
-        line-height: 1.5;
-        color: #13181D;
-        word-break: break-word;
-      }
+  const baseStyle = document.createElement('style');
+  baseStyle.textContent = `
+    :host {
+      all: initial;
+      width: 100%;
+      height: 100%;
+      font-family: Inter, 'Helvetica Neue', Helvetica, 'PingFang SC',
+                  'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #13181D;
+      word-break: break-word;
+    }
 
-      h1, h2, h3, h4 {
-          font-size: 18px;
-          font-weight: 700;
-      }
+    h1, h2, h3, h4 {
+        font-size: 18px;
+        font-weight: 700;
+    }
 
-      p {
-        margin: 0;
-      }
+    p {
+      margin: 0;
+    }
 
-      a {
-        text-decoration: none;
-        color: #0E70DF;
-      }
+    a {
+      text-decoration: none;
+      color: #0E70DF;
+    }
 
-      .shadow-content {
-        background: #FFFFFF;
-        width: fit-content;
-        height: fit-content;
-        min-width: 100%;
-        ${bodyStyle ? bodyStyle : ''} /* 注入 body 的 style */
-      }
+    .shadow-content {
+      background: #FFFFFF;
+      width: fit-content;
+      height: fit-content;
+      min-width: 100%;
+    }
 
-      img:not(table img) {
-        max-width: 100%;
-        height: auto !important;
-      }
-
-    </style>
-    <div class="shadow-content">
-      ${cleanedHtml}
-    </div>
+    img:not(table img) {
+      max-width: 100%;
+      height: auto !important;
+    }
   `;
+  shadowRoot.appendChild(baseStyle);
+
+  doc.head?.querySelectorAll('style').forEach(styleNode => {
+    const emailStyle = document.createElement('style');
+    emailStyle.textContent = styleNode.textContent || '';
+    shadowRoot.appendChild(emailStyle);
+  });
+
+  const contentDiv = document.createElement('div');
+  contentDiv.className = 'shadow-content';
+  if (bodyStyle) {
+    contentDiv.setAttribute('style', bodyStyle);
+  }
+  contentDiv.innerHTML = doc.body ? doc.body.innerHTML : cleanHtml;
+  shadowRoot.appendChild(contentDiv);
 }
 
 function autoScale() {

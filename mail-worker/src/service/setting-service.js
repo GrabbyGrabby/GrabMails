@@ -204,7 +204,7 @@ const settingService = {
 			await r2Service.putObj(c, background, arrayBuffer, {
 				contentType: file.type,
 				cacheControl: `public, max-age=31536000, immutable`,
-				contentDisposition: `inline; filename="${file.name}"`
+				contentDisposition: `inline; filename="${String(file.name || "background").replace(/[\r\n"\\;]/g, "_")}"`
 			});
 
 		}
@@ -234,7 +234,7 @@ const settingService = {
 			addEmail: settingRow.addEmail,
 			autoRefresh: settingRow.autoRefresh,
 			addEmailVerify: settingRow.addEmailVerify,
-			registerVerify: settingRow.registerVerify,
+			registerVerify: (!settingRow.siteKey || !settingRow.secretKey) ? 1 : settingRow.registerVerify,
 			send: settingRow.send,
 			r2Domain: settingRow.r2Domain,
 			siteKey: settingRow.siteKey,
@@ -242,7 +242,7 @@ const settingService = {
 			loginOpacity: settingRow.loginOpacity,
 			domainList: settingRow.loginDomain === 1 && !token ? [] : settingRow.domainList,
 			regKey: settingRow.regKey,
-			regVerifyOpen: settingRow.regVerifyOpen,
+			regVerifyOpen: (!settingRow.siteKey || !settingRow.secretKey) ? false : settingRow.regVerifyOpen,
 			addVerifyOpen: settingRow.addVerifyOpen,
 			noticeTitle: settingRow.noticeTitle,
 			noticeContent: settingRow.noticeContent,

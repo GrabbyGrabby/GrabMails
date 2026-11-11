@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 
 export const useUiStore = defineStore('ui', {
     state: () => ({
-        asideShow: window.innerWidth > 1024,
+        asideShow: false,
         accountShow: false,
         backgroundLoading: true,
         changeNotice: 0,

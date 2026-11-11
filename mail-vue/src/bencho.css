@@ -6,13 +6,14 @@
 .eyt {
   --bg: var(--el-bg-color, #FAF8F5);
   --card: var(--el-bg-color-overlay, #ffffff);
-  --fill-slab: #ffffff;
-  --fill-on: #1C1917;
+  /* Light mode: Body is black, eyes are white */
+  --fill-slab: #000000;
+  --fill-on: #ffffff;
   --font-ui: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --ink: #1C1917;
+  --ink: #000000;
 
-  width: 200px;
-  height: 200px;
+  width: var(--eyt-size, 100px);
+  height: var(--eyt-size, 100px);
   display: grid;
   place-items: center;
   position: relative;
@@ -22,30 +23,45 @@
 
 .dark .eyt,
 [data-theme="dark"] .eyt {
-  --bg: var(--el-bg-color, #111215);
-  --card: var(--el-bg-color-overlay, #18191E);
-  --fill-slab: #24252B;
-  --fill-on: #F5F2EB;
-  --ink: #F5F2EB;
+  --bg: var(--el-bg-color, #0a0a0c);
+  --card: var(--el-bg-color-overlay, #121316);
+  /* Dark mode: Body is white, eyes are black */
+  --fill-slab: #ffffff;
+  --fill-on: #000000;
+  --ink: #ffffff;
 }
 
 .eyt-ball {
   width: var(--eyt-size, 100px);
   height: var(--eyt-size, 100px);
   overflow: visible;
-  filter: drop-shadow(0 10px 20px rgba(28, 25, 23, 0.08));
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.08));
 }
 
 .dark .eyt-ball {
-  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.55));
 }
 
-/* the ball is the Fill's own slab and the eyes its ink: white
-   with dark eyes on a light fill, near-black with light eyes on
-   a dark one */
-.eyt-body { fill: var(--fill-slab, #ffffff); }
+/* the ball is the Fill's own slab and the eyes its ink */
+.eyt-body {
+  fill: var(--fill-slab, #000000) !important;
+  stroke: rgba(0, 0, 0, 0.12);
+  stroke-width: 1px;
+}
 
-.eyt-eye { fill: var(--fill-on, #1C1917); }
+.dark .eyt-body {
+  fill: var(--fill-slab, #ffffff) !important;
+  stroke: rgba(255, 255, 255, 0.2);
+  stroke-width: 1px;
+}
+
+.eyt-eye {
+  fill: var(--fill-on, #ffffff) !important;
+}
+
+.dark .eyt-eye {
+  fill: var(--fill-on, #000000) !important;
+}
 
 /* a press on the toy opens a chat bubble off its lower right: the
    pet's bubble, its square corner pointing back at the face */
@@ -69,8 +85,8 @@
   min-height: 34px;
   padding: 0 16px;
   border-radius: 8px 16px 16px 16px;
-  background: var(--tint, #2563eb);
-  box-shadow: inset 0 -1.5px 0 rgba(0, 0, 0, 0.1), 0 6px 18px rgba(37, 99, 235, 0.22);
+  background: var(--tint, #18181b);
+  box-shadow: inset 0 -1.5px 0 rgba(0, 0, 0, 0.1), 0 6px 18px rgba(0, 0, 0, 0.25);
   color: #ffffff;
   font-family: var(--font-ui);
   font-size: 13px;
@@ -382,6 +398,99 @@
   padding: 10px 16px;
   border-radius: 28px;
   touch-action: pan-y;}
+
+/* ══ Floating Capsule Navbar ══
+   Light mode: Pure black with white icons
+   Dark mode: #FBE4D8 with black icons */
+.floating-dock-bar .gdock {
+  border-radius: 9999px !important;
+  padding: 8px 18px !important;
+  gap: 16px !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  transition: all 260ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* Light Mode: Navbar is pure black with white icons */
+html:not(.dark) .floating-dock-bar .gdock,
+:root:not(.dark) .floating-dock-bar .gdock {
+  background: #000000 !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45) !important;
+}
+html:not(.dark) .floating-dock-bar .gdock-item,
+:root:not(.dark) .floating-dock-bar .gdock-item {
+  color: #ffffff !important;
+}
+html:not(.dark) .floating-dock-bar .gdock-dot,
+:root:not(.dark) .floating-dock-bar .gdock-dot {
+  background: #ffffff !important;
+}
+
+/* Dark Mode: Floating navbar is pure white with black text & icons */
+.dark .floating-dock-bar .gdock,
+[data-theme="dark"] .floating-dock-bar .gdock {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+.dark .floating-dock-bar .gdock-item,
+[data-theme="dark"] .floating-dock-bar .gdock-item {
+  color: #000000 !important;
+}
+.dark .floating-dock-bar .gdock-dot,
+[data-theme="dark"] .floating-dock-bar .gdock-dot {
+  background: #000000 !important;
+}
+.dark .floating-dock-bar .gdock-tip,
+[data-theme="dark"] .floating-dock-bar .gdock-tip {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+.floating-dock-bar .gdock-item {
+  position: relative !important;
+  width: 44px !important;
+  height: 44px !important;
+  opacity: 0.72 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: opacity 180ms ease, transform 180ms ease !important;
+}
+
+.floating-dock-bar .gdock-item:hover,
+.floating-dock-bar .gdock-item[data-active="true"] {
+  opacity: 1 !important;
+}
+
+.floating-dock-bar .gdock-dot {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: 3px !important;
+  width: 4px !important;
+  height: 4px !important;
+  margin-left: -2px !important;
+  border-radius: 50% !important;
+  opacity: 0 !important;
+  transform: scale(0.4) !important;
+  transition: opacity 180ms ease, transform 240ms cubic-bezier(0.24, 1.34, 0.38, 1) !important;
+}
+
+.floating-dock-bar .gdock-dot[data-on="true"],
+.floating-dock-bar .gdock-item[data-active="true"] .gdock-dot {
+  opacity: 1 !important;
+  transform: scale(1) !important;
+}
+
+.floating-dock-bar .gdock-tip {
+  background: #111113 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  font-size: 11px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
 
 .gdock-item {
   position: relative;

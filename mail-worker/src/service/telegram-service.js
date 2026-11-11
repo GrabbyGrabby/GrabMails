@@ -22,23 +22,23 @@ const telegramService = {
 
 		const result = await jwtUtils.verifyToken(c, token);
 
-		if (!result) {
-			return emailTextTemplate('Access denied')
+		if (!result || result.purpose !== 'tg_email' || !Number.isInteger(Number(result.emailId))) {
+			return { html: emailTextTemplate('Access denied'), nonce: null };
 		}
 
-		const emailRow = await orm(c).select().from(email).where(eq(email.emailId, result.emailId)).get();
+		const emailRow = await orm(c).select().from(email).where(eq(email.emailId, Number(result.emailId))).get();
 
 		if (emailRow) {
 
 			if (emailRow.content) {
 				const { r2Domain } = await settingService.query(c);
-				return emailHtmlTemplate(emailRow.content || '', r2Domain)
+				return emailHtmlTemplate(emailRow.content || '', r2Domain);
 			} else {
-				return emailTextTemplate(emailRow.text || '')
+				return { html: emailTextTemplate(emailRow.text || ''), nonce: null };
 			}
 
 		} else {
-			return emailTextTemplate('The email does not exist')
+			return { html: emailTextTemplate('The email does not exist'), nonce: null };
 		}
 
 	},
@@ -49,7 +49,7 @@ const telegramService = {
 
 		const tgChatIds = tgChatId.split(',');
 
-		const jwtToken = await jwtUtils.generateToken(c, { emailId: email.emailId })
+		const jwtToken = await jwtUtils.generateToken(c, { purpose: 'tg_email', emailId: email.emailId }, 60 * 60 * 24 * 7)
 
 		const webAppUrl = customDomain ? `${domainUtils.toOssDomain(customDomain)}/api/telegram/getEmail/${jwtToken}` : 'https://www.cloudflare.com/404'
 		const inlineKeyboard = [

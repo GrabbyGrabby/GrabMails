@@ -31,20 +31,28 @@ const userService = {
 			throw new BizError(t('authExpired'), 401);
 		}
 
+		await roleService.ensureDefaultRoleQuota(c);
+
 		const [account, roleRow, permKeys] = await Promise.all([
 			accountService.selectByEmailIncludeDel(c, userRow.email),
 			roleService.selectById(c, userRow.type),
 			userRow.email === c.env.admin ? Promise.resolve(['*']) : permService.userPermKeys(c, userId)
 		]);
 
+		const resolvedRole = roleRow || (await roleService.selectDefaultRole(c)) || {
+			roleId: userRow.type,
+			name: 'user',
+			...roleService.getDefaultQuota(c)
+		};
+
 		const user = {};
 		user.userId = userRow.userId;
 		user.sendCount = userRow.sendCount;
 		user.email = userRow.email;
 		user.account = account;
-		user.name = account.name;
+		user.name = account?.name || emailUtils.getName(userRow.email);
 		user.permKeys = permKeys;
-		user.role = roleRow;
+		user.role = resolvedRole;
 		user.type = userRow.type;
 
 		if (c.env.admin === userRow.email) {
@@ -56,15 +64,28 @@ const userService = {
 	},
 
 
-	async resetPassword(c, params, userId) {
+	async resetPassword(c, params, userId, keepToken = null) {
 
 		const { password } = params;
 
-		if (password.length < 6) {
+		if (typeof password !== 'string' || password.length < 6) {
 			throw new BizError(t('pwdMinLength'));
+		}
+		if (password.length > 30) {
+			throw new BizError(t('pwdLengthLimit'));
 		}
 		const { salt, hash } = await cryptoUtils.hashPassword(password);
 		await orm(c).update(user).set({ password: hash, salt: salt }).where(eq(user.userId, userId)).run();
+
+		const authInfo = await c.env.kv.get(KvConst.AUTH_INFO + userId, { type: 'json' });
+		if (authInfo && Array.isArray(authInfo.tokens)) {
+			if (keepToken && authInfo.tokens.includes(keepToken)) {
+				authInfo.tokens = [keepToken];
+				await c.env.kv.put(KvConst.AUTH_INFO + userId, JSON.stringify(authInfo), { expirationTtl: constant.TOKEN_EXPIRE });
+			} else {
+				await c.env.kv.delete(KvConst.AUTH_INFO + userId);
+			}
+		}
 	},
 
 	selectByEmail(c, email) {
@@ -107,13 +128,26 @@ const userService = {
 		await c.env.kv.delete(kvConst.AUTH_INFO + userId)
 	},
 
-	async physicsDelete(c, params) {
+	async assertCanManageTargetUsers(c, userIds, currentUser = null) {
+		if (!currentUser || currentUser.email === c.env.admin) {
+			return;
+		}
+		const targets = await orm(c).select({ userId: user.userId, email: user.email }).from(user).where(inArray(user.userId, userIds)).all();
+		if (targets.some(target => target.email === c.env.admin)) {
+			throw new BizError(t('unauthorized'), 403);
+		}
+	},
+
+	async physicsDelete(c, params, currentUser = null) {
 		let { userIds } = params;
-		userIds = userIds.split(',').map(Number);
+		userIds = String(userIds || '').split(',').map(id => Number(id.trim())).filter(id => Number.isInteger(id) && id > 0);
+		if (userIds.length === 0) return;
+		await this.assertCanManageTargetUsers(c, userIds, currentUser);
 		await starService.removeByUserIds(c, userIds);
 		await accountService.physicsDeleteByUserIds(c, userIds);
 		await oauthService.deleteByUserIds(c, userIds);
 		await orm(c).delete(user).where(inArray(user.userId, userIds)).run();
+		await Promise.all(userIds.map(id => c.env.kv.delete(KvConst.AUTH_INFO + id)));
 	},
 
 	async list(c, params) {
@@ -158,7 +192,21 @@ const userService = {
 
 
 		const query = orm(c).select({
-			...user,
+			userId: user.userId,
+			email: user.email,
+			type: user.type,
+			status: user.status,
+			createTime: user.createTime,
+			activeTime: user.activeTime,
+			isDel: user.isDel,
+			regKeyId: user.regKeyId,
+			createIp: user.createIp,
+			activeIp: user.activeIp,
+			os: user.os,
+			browser: user.browser,
+			device: user.device,
+			sort: user.sort,
+			sendCount: user.sendCount,
 			username: oauth.username,
 			trustLevel: oauth.trustLevel,
 			avatar: oauth.avatar,
@@ -180,6 +228,9 @@ const userService = {
 			.select({ total: count() })
 			.from(user)
 			.where(and(...conditions)).get();
+		if (list.length === 0) {
+			return { list, total };
+		}
 		const userIds = list.map(user => user.userId);
 
 		const types = [...new Set(list.map(user => user.type))];
@@ -265,16 +316,17 @@ const userService = {
 			.run();
 	},
 
-	async setPwd(c, params) {
+	async setPwd(c, params, currentUser = null) {
 
 		const { password, userId } = params;
-		await this.resetPassword(c, { password }, userId);
-		await c.env.kv.delete(KvConst.AUTH_INFO + userId);
+		await this.assertCanManageTargetUsers(c, [Number(userId)], currentUser);
+		await this.resetPassword(c, { password }, userId, null);
 	},
 
-	async setStatus(c, params) {
+	async setStatus(c, params, currentUser = null) {
 
 		const { status, userId } = params;
+		await this.assertCanManageTargetUsers(c, [Number(userId)], currentUser);
 
 		await orm(c)
 			.update(user)
@@ -287,9 +339,10 @@ const userService = {
 		}
 	},
 
-	async setType(c, params) {
+	async setType(c, params, currentUser = null) {
 
 		const { type, userId } = params;
+		await this.assertCanManageTargetUsers(c, [Number(userId)], currentUser);
 
 		const roleRow = await roleService.selectById(c, type);
 
@@ -325,11 +378,11 @@ const userService = {
 
 		let { email, type, password } = params;
 
-		if (!c.env.domain.includes(emailUtils.getDomain(email))) {
+		if (typeof email !== 'string' || !emailUtils.isAllowedDomain(c.env.domain, email)) {
 			throw new BizError(t('notEmailDomain'));
 		}
 
-		if (password.length < 6) {
+		if (typeof password !== 'string' || password.length < 6) {
 			throw new BizError(t('pwdMinLength'));
 		}
 
@@ -342,6 +395,8 @@ const userService = {
 		if (accountRow) {
 			throw new BizError(t('isRegAccount'));
 		}
+
+		await roleService.ensureDefaultRoleQuota(c);
 
 		let role;
 		if (type === undefined) {
@@ -371,6 +426,7 @@ const userService = {
 		}
 		const roleList = await roleService.selectByIdsAndSendType(c, 'email:send', roleConst.sendType.DAY);
 		const roleIds = roleList.map(action => action.roleId);
+		if (roleIds.length === 0) return;
 		await orm(c).update(user).set({ sendCount: 0 }).where(inArray(user.type, roleIds)).run();
 	},
 
@@ -386,6 +442,9 @@ const userService = {
 			.where(eq(user.userId, userId))
 			.run();
 		const userRow = await this.selectById(c, userId);
+		if (!userRow) {
+			return;
+		}
 		await accountService.restoreByEmail(c, userRow.email);
 
 		if (type) {

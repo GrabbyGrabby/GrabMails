@@ -1,6 +1,6 @@
 import role from '../entity/role';
 import orm from '../entity/orm';
-import { eq, asc, inArray, and } from 'drizzle-orm';
+import { eq, asc, inArray, and, or } from 'drizzle-orm';
 import BizError from '../error/biz-error';
 import rolePerm from '../entity/role-perm';
 import perm from '../entity/perm';
@@ -46,7 +46,52 @@ const roleService = {
 
 	},
 
+	getDefaultQuota(c) {
+		const rawSend = Number(c?.env?.DEFAULT_SEND_BALANCE);
+		const rawAccount = Number(c?.env?.DEFAULT_ACCOUNT_LIMIT);
+		const sendCount = Number.isFinite(rawSend) && rawSend > 0 ? Math.floor(rawSend) : 50;
+		const accountCount = Number.isFinite(rawAccount) && rawAccount > 0 ? Math.floor(rawAccount) : 10;
+		return {
+			sendCount,
+			sendType: roleConst.sendType.DAY,
+			accountCount
+		};
+	},
+
+	async ensureDefaultRoleQuota(c) {
+		if (!c?.env?.db) {
+			return;
+		}
+		const { sendCount, sendType, accountCount } = this.getDefaultQuota(c);
+		const syncKey = `quota_default_sync_v1:${sendCount}:${accountCount}`;
+
+		if (c?.env?.kv) {
+			try {
+				const synced = await c.env.kv.get(syncKey);
+				if (synced) {
+					return;
+				}
+			} catch (e) {
+				console.warn('skip kv quota sync check:', e);
+			}
+		}
+
+		try {
+			await orm(c).update(role)
+				.set({ sendCount, sendType, accountCount })
+				.where(or(inArray(role.roleId, [1, 2]), eq(role.isDefault, roleConst.isDefault.OPEN)))
+				.run();
+
+			if (c?.env?.kv) {
+				await c.env.kv.put(syncKey, '1');
+			}
+		} catch (e) {
+			console.warn('ensureDefaultRoleQuota skipped:', e);
+		}
+	},
+
 	async roleList(c) {
+		await this.ensureDefaultRoleQuota(c);
 
 		const roleList = await orm(c).select().from(role).orderBy(asc(role.sort)).all();
 		const permList = await orm(c).select({ permId: perm.permId, roleId: rolePerm.roleId }).from(rolePerm)
@@ -54,8 +99,8 @@ const roleService = {
 			.where(eq(perm.type, permConst.type.BUTTON)).all();
 
 		roleList.forEach(role => {
-			role.banEmail = role.banEmail.split(",").filter(item => item !== "");
-			role.availDomain = role.availDomain.split(",").filter(item => item !== "");
+			role.banEmail = (role.banEmail || "").split(",").filter(item => item !== "");
+			role.availDomain = (role.availDomain || "").split(",").filter(item => item !== "");
 			role.permIds = permList.filter(perm => perm.roleId === role.roleId).map(perm => perm.permId);
 		});
 

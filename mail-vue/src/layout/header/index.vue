@@ -36,54 +36,60 @@
       <el-dropdown
         ref="userDropdownRef"
         trigger="click"
-        :teleported="false"
+        :teleported="true"
         popper-class="detail-dropdown"
         @visible-change="userCardVisible = $event"
       >
         <div class="avatar">
-          <div class="avatar-text">
-            <div>{{ formatName(userStore.user.email) }}</div>
+          <div class="avatar-mascot-pill">
+            <EyeTrackerVue :size="24" shape="Cube" eyes="Slant" :follow="50" :bounce="20" />
           </div>
-          <Icon class="setting-icon" icon="mingcute:down-small-fill" width="24" height="24"/>
+          <Icon class="setting-icon" icon="mingcute:down-small-fill" width="18" height="18"/>
         </div>
         <template #dropdown>
           <div class="user-details">
-            <div class="details-avatar">
-              {{ formatName(userStore.user.email) }}
+            <div class="details-mascot">
+              <EyeTrackerVue :size="44" shape="Cube" eyes="Slant" :follow="65" :bounce="25" />
             </div>
-            <div class="user-name">
-              {{ userStore.user.name }}
-            </div>
-            <div class="detail-email" @click="copyEmail(userStore.user.email)">
-              {{ userStore.user.email }}
-            </div>
-            <div class="detail-user-type">
-              <el-tag>{{ userStore.user.role.name }}</el-tag>
+            <div class="user-identity">
+              <div class="user-name">
+                {{ userStore.user.name }}
+              </div>
+              <div class="detail-email" @click="copyEmail(userStore.user.email)" :title="userStore.user.email">
+                <span>{{ userStore.user.email }}</span>
+                <Icon icon="solar:copy-linear" width="13" height="13" class="copy-hint-icon" />
+              </div>
+              <div class="detail-user-type">
+                <span class="modern-role-badge">{{ userStore.user.role?.name }}</span>
+              </div>
             </div>
             <div class="action-info">
-              <div>
-                <span style="margin-right: 10px">{{ $t('sendCount') }}</span>
-                <span style="margin-right: 10px">{{ $t('accountCount') }}</span>
-              </div>
-              <div>
-                <div>
-                  <span v-if="sendCount" style="margin-right: 5px">{{ sendCount }}</span>
-                  <el-tag v-if="!hasPerm('email:send')">{{ sendType }}</el-tag>
-                  <el-tag v-else>{{ sendType }}</el-tag>
+              <div class="action-row">
+                <span class="action-label">{{ $t('sendCount') }}</span>
+                <div class="action-value">
+                  <span v-if="sendCount" class="action-count-text">{{ sendCount }}</span>
+                  <span class="modern-stat-badge">{{ sendType }}</span>
                 </div>
-                <div>
-                  <el-tag v-if="settingStore.settings.manyEmail || settingStore.settings.addEmail">
+              </div>
+              <div class="action-row">
+                <span class="action-label">{{ $t('accountCount') }}</span>
+                <div class="action-value">
+                  <span class="modern-stat-badge" v-if="settingStore.settings.manyEmail || settingStore.settings.addEmail">
                     {{ $t('disabled') }}
-                  </el-tag>
-                  <span v-else-if="accountCount && hasPerm('account:add')"
-                        style="margin-right: 5px">{{ $t('totalUserAccount', {msg: accountCount}) }}</span>
-                  <el-tag v-else-if="!accountCount && hasPerm('account:add')">{{ $t('unlimited') }}</el-tag>
-                  <el-tag v-else-if="!hasPerm('account:add')">{{ $t('unauthorized') }}</el-tag>
+                  </span>
+                  <span class="modern-stat-badge" v-else-if="accountCount && hasPerm('account:add')">
+                    {{ $t('totalUserAccount', {msg: accountCount}) }}
+                  </span>
+                  <span class="modern-stat-badge" v-else-if="!accountCount && hasPerm('account:add')">{{ $t('unlimited') }}</span>
+                  <span class="modern-stat-badge" v-else-if="!hasPerm('account:add')">{{ $t('unauthorized') }}</span>
                 </div>
               </div>
             </div>
             <div class="logout">
-              <el-button type="primary" :loading="logoutLoading" @click="clickLogout">{{ $t('logOut') }}</el-button>
+              <button class="modern-logout-btn" :disabled="logoutLoading" @click="clickLogout">
+                <Icon icon="solar:logout-2-linear" width="16" height="16" />
+                <span>{{ logoutLoading ? 'Signing out...' : $t('logOut') }}</span>
+              </button>
             </div>
           </div>
         </template>
@@ -108,6 +114,7 @@ import {setExtend} from "@/utils/day.js"
 import emailSearch from '@/components/email-search/index.vue'
 import {useEmailStore} from '@/store/email.js'
 import {useSendStore} from '@/store/send.js'
+import EyeTrackerVue from "@/components/EyeTrackerVue.vue";
 
 const {t} = useI18n();
 const route = useRoute();
@@ -150,7 +157,7 @@ function returnToList(listName) {
 }
 
 const accountCount = computed(() => {
-  return userStore.user.role.accountCount
+  return userStore.user.role?.accountCount
 })
 
 const sendType = computed(() => {
@@ -163,23 +170,23 @@ const sendType = computed(() => {
     return t('unauthorized')
   }
 
-  if (userStore.user.role.sendType === 'ban') {
+  if (userStore.user.role?.sendType === 'ban') {
     return t('sendBanned')
   }
 
-  if (userStore.user.role.sendType === 'internal') {
+  if (userStore.user.role?.sendType === 'internal') {
     return t('sendInternal')
   }
 
-  if (!userStore.user.role.sendCount) {
+  if (!userStore.user.role?.sendCount) {
     return t('unlimited')
   }
 
-  if (userStore.user.role.sendType === 'day') {
+  if (userStore.user.role?.sendType === 'day') {
     return t('daily')
   }
 
-  if (userStore.user.role.sendType === 'count') {
+  if (userStore.user.role?.sendType === 'count') {
     return t('total')
   }
 })
@@ -191,15 +198,15 @@ const sendCount = computed(() => {
     return null
   }
 
-  if (userStore.user.role.sendType === 'ban') {
+  if (userStore.user.role?.sendType === 'ban') {
     return null
   }
 
-  if (userStore.user.role.sendType === 'internal') {
+  if (userStore.user.role?.sendType === 'internal') {
     return null
   }
 
-  if (!userStore.user.role.sendCount) {
+  if (!userStore.user.role?.sendCount) {
     return null
   }
 
@@ -207,7 +214,7 @@ const sendCount = computed(() => {
     return null
   }
 
-  return userStore.user.sendCount + '/' + userStore.user.role.sendCount
+  return userStore.user.sendCount + '/' + userStore.user.role?.sendCount
 })
 
 async function copyEmail(email) {
@@ -249,10 +256,6 @@ function clickLogout() {
   }).finally(() => {
     logoutLoading.value = false
   })
-}
-
-function formatName(email) {
-  return email[0]?.toUpperCase() || ''
 }
 
 function isInsideUserCard(target) {
@@ -299,101 +302,256 @@ onBeforeUnmount(() => {
 </script>
 <style>
 .detail-dropdown {
-  color: var(--el-text-color-primary) !important;
+  width: min(304px, calc(100vw - 24px)) !important;
+  height: min(304px, calc(100vw - 24px)) !important;
+  background: #ffffff !important;
+  color: #051F20 !important;
+  border-radius: 28px !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 20px 48px -10px rgba(0, 0, 0, 0.16), 0 4px 16px rgba(0, 0, 0, 0.06) !important;
+  padding: 18px !important;
+  box-sizing: border-box !important;
+  z-index: 999999 !important;
+  overflow: hidden !important;
+  opacity: 1 !important;
+}
+
+.detail-dropdown .el-scrollbar,
+.detail-dropdown .el-scrollbar__wrap,
+.detail-dropdown .el-scrollbar__view {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  padding-bottom: 0 !important;
+  overflow: hidden !important;
+}
+
+.detail-dropdown .el-popper__arrow {
+  display: none !important;
+}
+
+.dark .detail-dropdown,
+[data-theme="dark"] .detail-dropdown {
+  background: #111318 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 24px 60px -10px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+.detail-dropdown .el-dropdown-menu {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
 }
 </style>
 <style lang="scss" scoped>
 
 :deep(.el-popper.is-pure) {
-  border-radius: 6px;
+  border-radius: 28px !important;
 }
 
 .user-details {
-  width: 250px;
-  font-size: 14px;
-  display: grid;
-  grid-template-columns: 1fr;
-  justify-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  .details-mascot {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .user-identity {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    min-width: 0;
+  }
 
   .user-name {
-    font-weight: bold;
-    margin-top: 10px;
-    padding-left: 20px;
-    padding-right: 20px;
-    width: 250px;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 1.25;
+    width: 100%;
+    padding: 0 8px;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
     text-align: center;
   }
 
-  .detail-user-type {
-    margin-top: 10px;
-  }
-
-  .action-info {
-    width: 100%;
-    display: grid;
-    grid-template-columns: auto auto;
-    margin-top: 10px;
-
-    > div:first-child {
-      display: grid;
-      align-items: center;
-      gap: 10px;
-    }
-
-    > div:last-child {
-      display: grid;
-      gap: 10px;
-      text-align: center;
-
-      > div {
-        display: flex;
-        align-items: center;
-      }
-    }
-  }
-
   .detail-email {
-    padding-left: 20px;
-    padding-right: 20px;
-    width: 250px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 2px 10px;
+    max-width: 100%;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
     text-align: center;
     color: var(--regular-text-color);
     cursor: pointer;
-  }
+    font-size: 12px;
+    border-radius: 9999px;
+    transition: background-color 160ms ease;
 
-  .logout {
-    margin-top: 20px;
-    width: 100%;
-    padding-left: 10px;
-    padding-right: 10px;
-    padding-bottom: 10px;
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
-    .el-button {
-      border-radius: 6px;
-      height: 28px;
-      width: 100%;
+    &:hover {
+      background: rgba(0, 0, 0, 0.05);
     }
   }
 
-  .details-avatar {
-    margin-top: 20px;
-    height: 40px;
-    width: 40px;
-    background: var(--el-bg-color);
-    color: var(--el-text-color-primary);
-    border: 1px solid var(--dark-border);
-    font-size: 18px;
+  .copy-hint-icon {
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+
+  .detail-user-type {
+    margin-top: 1px;
+  }
+
+  .action-info {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: 16px;
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .action-row {
     display: flex;
     align-items: center;
-    justify-content: center;
-    border-radius: 10px;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 22px;
   }
+
+  .action-label {
+    font-size: 12px;
+    color: var(--regular-text-color);
+    white-space: nowrap;
+  }
+
+  .action-value {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+  }
+
+  .action-count-text {
+    font-weight: 600;
+    font-size: 12px;
+  }
+
+  .modern-role-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 500;
+    background: rgba(0, 0, 0, 0.06);
+    color: var(--el-text-color-primary);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .modern-stat-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 11px;
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--el-text-color-regular);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .logout {
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  .modern-logout-btn {
+    width: 100%;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 9999px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: #000000;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 180ms ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+
+    &:hover:not(:disabled) {
+      background: #27272a;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.dark {
+  .user-details .action-info {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .modern-role-badge,
+  .modern-stat-badge {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #f1f5f9;
+  }
+
+  .modern-logout-btn {
+    background: #ffffff;
+    color: #000000;
+    border-color: rgba(255, 255, 255, 0.2);
+
+    &:hover:not(:disabled) {
+      background: #e4e4e7;
+    }
+  }
+
+  .detail-email:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.avatar-mascot-pill {
+  display: inline-flex;
+  align-items: center;
 }
 
 
@@ -476,6 +634,10 @@ onBeforeUnmount(() => {
     gap: 10px;
   }
 
+  .header-theme-toggle {
+    flex-shrink: 0;
+  }
+
   .icon-item {
     align-self: center;
     width: 30px;
@@ -494,6 +656,7 @@ onBeforeUnmount(() => {
   .avatar {
     display: flex;
     align-items: center;
+    gap: 4px;
     cursor: pointer;
 
     .avatar-text {
@@ -512,8 +675,9 @@ onBeforeUnmount(() => {
     .setting-icon {
       position: relative;
       top: 0;
-      margin-right: 10px;
-      bottom: 10px;
+      margin-right: 6px;
+      bottom: 0;
+      color: var(--el-text-color-primary);
     }
   }
 

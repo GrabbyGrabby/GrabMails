@@ -35,16 +35,22 @@ const publicService = {
 				isDel: email.isDel,
 		}).from(email)
 
-		if (!size) {
-			size = 20
-		}
-
-		if (!num) {
-			num = 1
-		}
-
 		size = Number(size);
 		num = Number(num);
+
+		if (!Number.isFinite(size) || size < 1) {
+			size = 20;
+		} else if (size > 100) {
+			size = 100;
+		} else {
+			size = Math.floor(size);
+		}
+
+		if (!Number.isFinite(num) || num < 1) {
+			num = 1;
+		} else {
+			num = Math.floor(num);
+		}
 
 		num = (num - 1) * size;
 
@@ -97,14 +103,22 @@ const publicService = {
 	async addUser(c, params) {
 		const { list } = params;
 
+		if (!Array.isArray(list)) {
+			throw new BizError('Invalid user list');
+		}
+
 		if (list.length === 0) return;
+
+		if (list.length > 100) {
+			throw new BizError('Batch limit exceeded (max 100)');
+		}
 
 		for (const emailRow of list) {
 			if (!verifyUtils.isEmail(emailRow.email)) {
 				throw new BizError(t('notEmail'));
 			}
 
-			if (!c.env.domain.includes(emailUtils.getDomain(emailRow.email))) {
+			if (!emailUtils.isAllowedDomain(c.env.domain, emailRow.email)) {
 				throw new BizError(t('notEmailDomain'));
 			}
 
@@ -128,21 +142,25 @@ const publicService = {
 
 		for (const emailRow of list) {
 			let { email, hash, salt, roleName } = emailRow;
-			let type = defRole.roleId;
+			let type = defRole?.roleId || 1;
 
 			if (roleName) {
 				const roleRow = roleList.find(role => role.name === roleName);
 				type = roleRow ? roleRow.roleId : type;
 			}
 
-			const userSql = `INSERT INTO user (email, password, salt, type, os, browser, active_ip, create_ip, device, active_time, create_time)
-			VALUES ('${email}', '${hash}', '${salt}', '${type}', '${os}', '${browser}', '${activeIp}', '${activeIp}', '${device}', '${activeTime}', '${activeTime}')`
+			const userStmt = c.env.db.prepare(
+				`INSERT INTO user (email, password, salt, type, os, browser, active_ip, create_ip, device, active_time, create_time)
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+			).bind(email, hash, salt, type, os, browser, activeIp, activeIp, device, activeTime, activeTime);
 
-			const accountSql = `INSERT INTO account (email, name, user_id)
-			VALUES ('${email}', '${emailUtils.getName(email)}', 0);`;
+			const accountStmt = c.env.db.prepare(
+				`INSERT INTO account (email, name, user_id)
+				 VALUES (?, ?, 0)`
+			).bind(email, emailUtils.getName(email));
 
-			userList.push(c.env.db.prepare(userSql));
-			userList.push(c.env.db.prepare(accountSql));
+			userList.push(userStmt);
+			userList.push(accountStmt);
 
 		}
 
@@ -173,7 +191,11 @@ const publicService = {
 
 	async verifyUser(c, params) {
 
-		const { email, password } = params
+		const { email, password } = params;
+
+		if (typeof email !== 'string' || typeof password !== 'string') {
+			throw new BizError(t('emailAndPwdEmpty'));
+		}
 
 		const userRow = await userService.selectByEmailIncludeDel(c, email);
 

@@ -84,14 +84,14 @@ export async function email(message, env, ctx) {
 
 		if (account && userRow.email !== env.admin) {
 
-			let { banEmail, availDomain } = await roleService.selectByUserId({ env: env }, account.userId);
+			let { banEmail, availDomain } = (await roleService.selectByUserId({ env: env }, account.userId)) || {};
 
 			if (!roleService.hasAvailDomainPerm(availDomain, message.to)) {
 				message.setReject('The recipient is not authorized to use this domain.');
 				return;
 			}
 
-			if(roleService.isBanEmail(banEmail, email.from.address)) {
+			if(roleService.isBanEmail(banEmail, email.from?.address || '')) {
 				message.setReject('The recipient is disabled from receiving emails.');
 				return;
 			}

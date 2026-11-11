@@ -3,13 +3,23 @@ import userService from '../service/user-service';
 import result from '../model/result';
 import userContext from '../security/user-context';
 
+function safeJsonParse(raw, fallback) {
+	if (!raw) return fallback;
+	try {
+		return JSON.parse(raw);
+	} catch (e) {
+		return fallback;
+	}
+}
+
 app.get('/my/loginUserInfo', async (c) => {
 	const user = await userService.loginUserInfo(c, userContext.getUserId(c));
 	return c.json(result.ok(user));
 });
 
 app.put('/my/resetPassword', async (c) => {
-	await userService.resetPassword(c, await c.req.json(), userContext.getUserId(c));
+	const currentToken = await userContext.getToken(c);
+	await userService.resetPassword(c, await c.req.json(), userContext.getUserId(c), currentToken);
 	return c.json(result.ok());
 });
 
@@ -28,9 +38,10 @@ app.get('/my/locale', async (c) => {
 app.post('/my/locale', async (c) => {
 	const userId = userContext.getUserId(c);
 	const { locale } = await c.req.json().catch(() => ({}));
-	if (locale) {
-		await c.env.kv.put(`user_locale_${userId}`, locale);
+	if (typeof locale !== 'string' || !/^[a-zA-Z]{2,5}([-_][a-zA-Z]{2,5})?$/.test(locale)) {
+		return c.json(result.fail('Invalid locale', 400));
 	}
+	await c.env.kv.put(`user_locale_${userId}`, locale);
 	return c.json(result.ok(locale));
 });
 
@@ -38,13 +49,20 @@ app.post('/my/locale', async (c) => {
 app.get('/my/wallpaper', async (c) => {
 	const userId = userContext.getUserId(c);
 	const res = await c.env.kv.get(`user_wallpaper_${userId}`);
-	return c.json(result.ok(res ? JSON.parse(res) : null));
+	return c.json(result.ok(safeJsonParse(res, null)));
 });
 
 app.post('/my/wallpaper', async (c) => {
 	const userId = userContext.getUserId(c);
-	const body = await c.req.json().catch(() => ({}));
-	await c.env.kv.put(`user_wallpaper_${userId}`, JSON.stringify(body));
+	const body = await c.req.json().catch(() => null);
+	if (!body || typeof body !== 'object' || Array.isArray(body)) {
+		return c.json(result.fail('Invalid wallpaper payload', 400));
+	}
+	const serialized = JSON.stringify(body);
+	if (serialized.length > 2048) {
+		return c.json(result.fail('Payload too large', 400));
+	}
+	await c.env.kv.put(`user_wallpaper_${userId}`, serialized);
 	return c.json(result.ok(body));
 });
 
@@ -59,13 +77,20 @@ app.get('/my/security', async (c) => {
 		backupEmail: '',
 		securityScore: 85
 	};
-	return c.json(result.ok(sec ? JSON.parse(sec) : defaultSec));
+	return c.json(result.ok(safeJsonParse(sec, defaultSec)));
 });
 
 app.post('/my/security', async (c) => {
 	const userId = userContext.getUserId(c);
-	const body = await c.req.json().catch(() => ({}));
-	await c.env.kv.put(`user_security_${userId}`, JSON.stringify(body));
+	const body = await c.req.json().catch(() => null);
+	if (!body || typeof body !== 'object' || Array.isArray(body)) {
+		return c.json(result.fail('Invalid security payload', 400));
+	}
+	const serialized = JSON.stringify(body);
+	if (serialized.length > 2048) {
+		return c.json(result.fail('Payload too large', 400));
+	}
+	await c.env.kv.put(`user_security_${userId}`, serialized);
 	return c.json(result.ok(body));
 });
 

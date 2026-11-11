@@ -57,9 +57,22 @@ export default defineConfig(({mode}) => {
         },
         build: {
             target: 'es2022',
+            sourcemap: false,
             outDir: env.VITE_OUT_DIR || 'dist',
             emptyOutDir: true,
-            assetsInclude: ['**/*.json']
+            assetsInclude: ['**/*.json'],
+            rollupOptions: {
+                output: {
+                    manualChunks(id) {
+                        if (!id.includes('node_modules')) return;
+                        const norm = id.replace(/\\/g, '/');
+                        if (norm.includes('/echarts/') || norm.includes('/zrender/')) return 'vendor-echarts';
+                        if (norm.includes('/lucide-react/') || norm.includes('/@iconify/')) return 'vendor-icons';
+                        if (norm.includes('/dexie/')) return 'vendor-dexie';
+                        return 'vendor-libs';
+                    }
+                }
+            }
         }
     }
 })

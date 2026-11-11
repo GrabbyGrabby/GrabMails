@@ -1,5 +1,6 @@
 import settingService from '../service/setting-service';
 import emailUtils from '../utils/email-utils';
+import cryptoUtils from '../utils/crypto-utils';
 import {emailConst} from "../const/entity-const";
 
 const dbInit = {
@@ -7,8 +8,8 @@ const dbInit = {
 
 		const secret = c.req.param('secret');
 
-		if (secret !== c.env.jwt_secret) {
-			return c.text('❌ JWT secret mismatch');
+		if (!c.env.jwt_secret || !secret || !(await cryptoUtils.timingSafeEqual(secret, c.env.jwt_secret))) {
+			return c.text('❌ JWT secret mismatch', 403);
 		}
 
 		await this.intDB(c);
@@ -573,13 +574,15 @@ const dbInit = {
 
 		const { roleCount } = await c.env.db.prepare(`SELECT COUNT(*) as roleCount FROM role`).first();
 		if (roleCount === 0) {
+			const defaultSendLimit = Number(c.env?.DEFAULT_SEND_BALANCE) || 50;
+			const defaultAccountLimit = Number(c.env?.DEFAULT_ACCOUNT_LIMIT) || 10;
 			await c.env.db.prepare(`
         INSERT INTO role (
           role_id, name, key, create_time, sort, description, user_id, is_default, send_count, send_type, account_count
         ) VALUES (
-          1, '普通用户', NULL, '0000-00-00 00:00:00', 0, '只有普通使用权限', 0, 1, NULL, 'ban', 10
+          1, '普通用户', NULL, '0000-00-00 00:00:00', 0, '只有普通使用权限', 0, 1, ?, 'day', ?
         )
-      `).run();
+      `).bind(defaultSendLimit, defaultAccountLimit).run();
 		}
 
 		// 创建 role_perm 表并初始化数据

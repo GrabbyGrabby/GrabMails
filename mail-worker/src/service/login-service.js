@@ -26,7 +26,8 @@ const loginService = {
 
 		const { email, password, token, code } = params;
 
-		let { regKey, register, registerVerify, regVerifyCount, minEmailPrefix, emailPrefixFilter } = await settingService.query(c)
+		let { regKey, register, registerVerify, regVerifyCount, minEmailPrefix, emailPrefixFilter, secretKey, siteKey } = await settingService.query(c)
+		if (!secretKey || !siteKey) { registerVerify = settingConst.registerVerify.CLOSE; }
 
 		if (oauth) {
 			registerVerify = settingConst.registerVerify.CLOSE;
@@ -37,8 +38,12 @@ const loginService = {
 			throw new BizError(t('regDisabled'));
 		}
 
-		if (!verifyUtils.isEmail(email)) {
+		if (typeof email !== 'string' || !verifyUtils.isEmail(email)) {
 			throw new BizError(t('notEmail'));
+		}
+
+		if (typeof password !== 'string') {
+			throw new BizError(t('pwdMinLength'));
 		}
 
 		if (emailUtils.getName(email).length < minEmailPrefix) {
@@ -61,7 +66,7 @@ const loginService = {
 			throw new BizError(t('pwdMinLength'));
 		}
 
-		if (!c.env.domain.includes(emailUtils.getDomain(email))) {
+		if (!emailUtils.isAllowedDomain(c.env.domain, email)) {
 			throw new BizError(t('notEmailDomain'));
 		}
 
@@ -90,17 +95,19 @@ const loginService = {
 			throw new BizError(t('isRegAccount'));
 		}
 
+		await roleService.ensureDefaultRoleQuota(c);
+
 		let defType = null
+		let defaultRoleRow = null
 
 		if (!type) {
-			const roleRow = await roleService.selectDefaultRole(c);
-			defType = roleRow.roleId
+			defaultRoleRow = await roleService.selectDefaultRole(c) || await roleService.selectById(c, 1);
+			defType = defaultRoleRow?.roleId || 1
 		}
 
+		const roleRow = (type ? await roleService.selectById(c, type) : defaultRoleRow) || await roleService.selectById(c, 1);
 
-		const roleRow = await roleService.selectById(c, type || defType);
-
-		if(!roleService.hasAvailDomainPerm(roleRow.availDomain, email)) {
+		if(roleRow && !roleService.hasAvailDomainPerm(roleRow.availDomain, email)) {
 
 			if (type) {
 				throw new BizError(t('noDomainPermRegKey'),403)
@@ -147,7 +154,14 @@ const loginService = {
 		let userId
 
 		try {
-			userId = await userService.insert(c, { email, regKeyId, password: hash, salt, type: type || defType });
+			let finalRole = (type || defType || 1);
+			if (finalRole === 1 && email !== c.env.admin) {
+				const nonAdminRole = await roleService.selectById(c, 2);
+				if (nonAdminRole) {
+					finalRole = 2;
+				}
+			}
+			userId = await userService.insert(c, { email, regKeyId, password: hash, salt, type: finalRole });
 			await accountService.insert(c, { userId: userId, email, name: emailUtils.getName(email) });
 		} catch (error) {
 			if (consumedCode) {
@@ -195,11 +209,11 @@ const loginService = {
 	},
 
 	async useDefaultRole(c, email) {
-		const defaultRole = await roleService.selectDefaultRole(c)
-		if (!roleService.hasAvailDomainPerm(defaultRole.availDomain, email)) {
+		const defaultRole = await roleService.selectDefaultRole(c) || await roleService.selectById(c, 1)
+		if (defaultRole && !roleService.hasAvailDomainPerm(defaultRole.availDomain, email)) {
 			throw new BizError(t('noDomainPermReg'), 403)
 		}
-		return defaultRole.roleId
+		return defaultRole?.roleId || 1
 	},
 
 	async handleOpenOptional(c, regKey, code) {
@@ -229,6 +243,10 @@ const loginService = {
 			throw new BizError(t('emailAndPwdEmpty'));
 		}
 
+		if (!email || typeof email !== 'string' || (!noVerifyPwd && typeof password !== 'string')) {
+			throw new BizError(t('emailAndPwdEmpty'));
+		}
+
 		const userRow = await userService.selectByEmailIncludeDel(c, email);
 
 		if (!userRow) {
@@ -251,20 +269,24 @@ const loginService = {
 		const jwt = await JwtUtils.generateToken(c,{ userId: userRow.userId, token: uuid });
 
 		let authInfo = await c.env.kv.get(KvConst.AUTH_INFO + userRow.userId, { type: 'json' });
+		const safeUser = { ...userRow };
+		delete safeUser.password;
+		delete safeUser.salt;
 
-		if (authInfo && (authInfo.user.email === userRow.email)) {
+		if (authInfo && (authInfo.user?.email === userRow.email) && Array.isArray(authInfo.tokens)) {
 
 			if (authInfo.tokens.length > 10) {
 				authInfo.tokens.shift();
 			}
 
 			authInfo.tokens.push(uuid);
+			authInfo.user = safeUser;
 
 		} else {
 
 			authInfo = {
 				tokens: [],
-				user: userRow,
+				user: safeUser,
 				refreshTime: dayjs().toISOString()
 			};
 
@@ -281,9 +303,14 @@ const loginService = {
 	async logout(c, userId) {
 		const token = await userContext.getToken(c);
 		const authInfo = await c.env.kv.get(KvConst.AUTH_INFO + userId, { type: 'json' });
+		if (!authInfo || !Array.isArray(authInfo.tokens)) {
+			return;
+		}
 		const index = authInfo.tokens.findIndex(item => item === token);
-		authInfo.tokens.splice(index, 1);
-		await c.env.kv.put(KvConst.AUTH_INFO + userId, JSON.stringify(authInfo), { expirationTtl: constant.TOKEN_EXPIRE });
+		if (index > -1) {
+			authInfo.tokens.splice(index, 1);
+			await c.env.kv.put(KvConst.AUTH_INFO + userId, JSON.stringify(authInfo), { expirationTtl: constant.TOKEN_EXPIRE });
+		}
 	}
 
 };

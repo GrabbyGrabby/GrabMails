@@ -20,10 +20,12 @@ const attService = {
 				contentType: attachment.mimeType,
 			}
 
+			const safeFilename = String(attachment.filename || 'attachment').replace(/[\r\n"\\;]/g, '_');
+
 			if (!attachment.contentId) {
-				metadate.contentDisposition = `attachment;filename=${attachment.filename}`
+				metadate.contentDisposition = `attachment; filename="${safeFilename}"`
 			} else {
-				metadate.contentDisposition = `inline;filename=${attachment.filename}`
+				metadate.contentDisposition = `inline; filename="${safeFilename}"`
 				metadate.cacheControl = `max-age=259200`
 			}
 
@@ -165,9 +167,10 @@ const attService = {
 		await orm(c).insert(att).values(attDataList).run();
 
 		for (let att of attList) {
+			const safeFilename = String(att.filename || 'attachment').replace(/[\r\n"\\;]/g, '_');
 			await r2Service.putObj(c, att.key, att.buff, {
 				contentType: att.type,
-				contentDisposition: `attachment;filename=${att.filename}`
+				contentDisposition: `attachment; filename="${safeFilename}"`
 			});
 		}
 
@@ -183,10 +186,11 @@ const attService = {
 			if (!attData.buff) {
 				continue;
 			}
+			const safeFilename = String(attData.filename || 'image').replace(/[\r\n"\\;]/g, '_');
 			await r2Service.putObj(c, attData.key, attData.buff, {
 				contentType: attData.mimeType,
 				cacheControl: `max-age=259200`,
-				contentDisposition: `inline;filename=${attData.filename}`
+				contentDisposition: `inline; filename="${safeFilename}"`
 			});
 			delete attData.buff;
 		}

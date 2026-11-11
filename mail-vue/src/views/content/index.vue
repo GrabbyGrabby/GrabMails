@@ -233,7 +233,12 @@ function openForward() {
 }
 
 function toMessage(message) {
-  return  message ? JSON.parse(message).message : '';
+  if (!message) return ''
+  try {
+    return JSON.parse(message).message || ''
+  } catch {
+    return String(message)
+  }
 }
 
 function formatImage(content) {
@@ -256,8 +261,12 @@ function isImage(filename) {
 
 function formateReceive(recipient) {
   if (!recipient) return ''
-  recipient = JSON.parse(recipient)
-  return recipient.map(item => item.address).join(', ')
+  try {
+    const list = JSON.parse(recipient)
+    return Array.isArray(list) ? list.map(item => item.address).join(', ') : String(recipient)
+  } catch {
+    return String(recipient)
+  }
 }
 
 function changeStar() {

@@ -8,6 +8,30 @@ const emailUtils = {
 		return parts.length === 2 ? parts[1] : '';
 	},
 
+	parseAllowedDomains(envDomain) {
+		if (Array.isArray(envDomain)) {
+			return envDomain.map(d => String(d).trim().toLowerCase()).filter(Boolean);
+		}
+		if (typeof envDomain === 'string') {
+			try {
+				const parsed = JSON.parse(envDomain);
+				if (Array.isArray(parsed)) {
+					return parsed.map(d => String(d).trim().toLowerCase()).filter(Boolean);
+				}
+			} catch (e) {
+				return envDomain.split(',').map(d => d.trim().toLowerCase()).filter(Boolean);
+			}
+		}
+		return [];
+	},
+
+	isAllowedDomain(envDomain, email) {
+		const domain = this.getDomain(email).toLowerCase();
+		if (!domain) return false;
+		const domains = this.parseAllowedDomains(envDomain);
+		return domains.includes(domain);
+	},
+
 	getName(email) {
 		if (typeof email !== 'string') return '';
 		const parts = email.trim().split('@');

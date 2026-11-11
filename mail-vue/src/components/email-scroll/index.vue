@@ -139,7 +139,40 @@
                        :showUserInfo="showUserInfo"
                        :type="type"/>
       <div class="empty" v-if="noLoading && emailList.length === 0 && !loading">
-        <el-empty :image-size="isMobile ? 120 : null" :description="$t('noMessagesFound')"/>
+        <div class="empty-state">
+          <svg
+            class="empty-folder-icon"
+            viewBox="0 0 380 240"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <path
+              d="M 0 28
+                 A 28 28 0 0 1 28 0
+                 L 180 0
+                 A 22 22 0 0 1 202 22
+                 A 22 22 0 0 0 224 44
+                 L 352 44
+                 A 28 28 0 0 1 380 72
+                 L 380 212
+                 A 28 28 0 0 1 352 240
+                 L 28 240
+                 A 28 28 0 0 1 0 212
+                 Z"
+              fill="currentColor"
+            />
+          </svg>
+          <button
+            v-if="showComposeButton"
+            type="button"
+            class="empty-compose-btn"
+            @click="openCompose"
+          >
+            <Icon icon="material-symbols:edit-outline-sharp" width="16" height="16" />
+            <span>{{ $t('compose') }}</span>
+          </button>
+        </div>
       </div>
     </div>
     <el-dropdown
@@ -237,6 +270,7 @@
 <script setup>
 import {Icon} from "@iconify/vue";
 import skeletonBlock from "@/components/email-scroll/skeleton/index.vue"
+import {hasPerm} from "@/perm/perm.js";
 import {computed, onActivated, reactive, ref, watch, nextTick, onMounted, onUnmounted } from "vue";
 import {useEmailStore} from "@/store/email.js";
 import {useUiStore} from "@/store/ui.js";
@@ -318,6 +352,13 @@ const checkAll = ref(false);
 const isIndeterminate = ref(false);
 const scroll = ref(null)
 const firstLoad = ref(true)
+const showComposeButton = computed(() => {
+  return ['email', 'send', 'draft', 'star'].includes(props.type) && hasPerm('email:send');
+})
+
+function openCompose() {
+  uiStore.writerRef?.open?.();
+}
 let scrollTop = 0
 const latestEmail = ref(null)
 const scrollbarRef = ref(null)
@@ -989,6 +1030,16 @@ function renderHighlight(value) {
     width: 100%;
   }
 
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 24px;
+    user-select: none;
+  }
+
   .noLoading {
     display: flex;
     justify-content: center;
@@ -1421,4 +1472,61 @@ ul {
   margin: 0;
 }
 
+</style>
+<style lang="scss">
+.email-container .empty-folder-icon {
+  width: 112px;
+  height: 72px;
+  display: block;
+  color: #000000;
+  transition: color 200ms ease;
+}
+
+html.dark .email-container .empty-folder-icon,
+.dark .email-container .empty-folder-icon,
+[data-theme="dark"] .email-container .empty-folder-icon {
+  color: #ffffff;
+}
+
+.email-container .empty-compose-btn {
+  height: 40px;
+  padding: 0 22px;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: #000000;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.25);
+  transition: transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+
+  &:hover {
+    background: #18181b;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.35);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+html.dark .email-container .empty-compose-btn,
+.dark .email-container .empty-compose-btn,
+[data-theme="dark"] .email-container .empty-compose-btn {
+  background: #ffffff;
+  color: #000000;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.7);
+
+  &:hover {
+    background: #e4e4e7;
+  }
+}
 </style>

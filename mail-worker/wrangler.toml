@@ -1,5 +1,5 @@
 name = "grabby-mail"
-main = "src/index.js"
+main = "dist-worker/index.js"
 compatibility_date = "2025-06-04"
 keep_vars = true
 
@@ -34,7 +34,8 @@ admin = "shiva@grabby.qzz.io"
 admin_email = "shiva@grabby.qzz.io"
 title = "GrabMails"
 SEND_EMAIL = "true"
-DEFAULT_SEND_BALANCE = "2"
+DEFAULT_SEND_BALANCE = "50"
+DEFAULT_ACCOUNT_LIMIT = "10"
 
 [build]
-command = "pnpm --prefix ../mail-vue install && pnpm --prefix ../mail-vue run build"
+command = "node scripts/build-harden.mjs"

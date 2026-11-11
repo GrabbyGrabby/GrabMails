@@ -45,6 +45,13 @@ const starService = {
 		let { emailId, size, full } = params;
 		emailId = Number(emailId) || 0;
 		size = Number(size);
+		if (!Number.isFinite(size) || size < 1) {
+			size = 20;
+		} else if (size > 50) {
+			size = 50;
+		} else {
+			size = Math.floor(size);
+		}
 		full = Number(full) === 1;
 		const columns = full ? emailListColumns : emailBriefColumns;
 

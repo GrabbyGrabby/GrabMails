@@ -31,12 +31,18 @@
           </div>
           <div class="search-content">
             <div class="search-content-title">{{ t('searchType') }}</div>
-            <div class="custom-style">
-              <el-segmented
-                v-model="searchType"
-                :options="searchOptions"
-                :props="{ label: 'label', value: 'type' }"
-              />
+            <div class="search-type-grid" role="radiogroup" :aria-label="t('searchType')">
+              <button
+                v-for="option in searchOptions"
+                :key="option.type"
+                type="button"
+                role="radio"
+                :aria-checked="searchType === option.type"
+                :class="['search-type-pill', { active: searchType === option.type }]"
+                @click="searchType = option.type"
+              >
+                {{ option.label }}
+              </button>
             </div>
             <div class="search-date-range">
               <div class="search-date-field">
@@ -63,8 +69,8 @@
             </div>
           </div>
           <div class="search-actions">
-            <el-button @click="handleReset">{{ t('reset') }}</el-button>
-            <el-button type="primary" @click="handleSearch">{{ t('search') }}</el-button>
+            <button type="button" class="search-btn search-reset-btn" @click="handleReset">{{ t('reset') }}</button>
+            <button type="button" class="search-btn search-submit-btn" @click="handleSearch">{{ t('search') }}</button>
           </div>
         </el-card>
       </div>
@@ -281,7 +287,7 @@ onBeforeUnmount(() => {
 <style lang="scss" scoped>
 .email-search {
   position: absolute;
-  left: -1;
+  left: 0;
   top: 50%;
   transform: translateY(-50%);
   z-index: 10;
@@ -334,9 +340,22 @@ onBeforeUnmount(() => {
   display: none;
 }
 
+.search-panel-shell {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 1001;
+  width: min(304px, calc(100vw - 24px));
+  height: min(304px, calc(100vw - 24px));
+  box-sizing: border-box;
+  background: transparent !important;
+}
+
 @media (max-width: 767px) {
   .email-search {
-    position: static;
+    position: relative;
+    left: auto;
+    top: auto;
     transform: none;
     width: 32px;
     height: 32px;
@@ -367,45 +386,12 @@ onBeforeUnmount(() => {
 
   .email-search .search-panel-shell {
     top: calc(100% + 8px);
-    left: 50%;
-    right: auto;
-    width: min(450px, calc(100vw - 30px));
-    translate: -50% 0;
+    left: auto;
+    right: 0;
+    width: min(304px, calc(100vw - 24px));
+    height: min(304px, calc(100vw - 24px));
+    translate: none;
   }
-}
-
-.search-panel-shell {
-  position: absolute;
-  top: -4px;
-  left: 0;
-  z-index: 1001;
-  width: 100%;
-  background: var(--el-bg-color-overlay);
-}
-
-.search-panel {
-  width: 100%;
-  height: auto;
-  min-height: 0;
-  box-sizing: border-box;
-  --el-card-bg-color: var(--el-bg-color-overlay);
-  background-color: var(--el-card-bg-color) !important;
-  border-radius: 6px !important;
-  border: 1px solid var(--el-border-color) !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16) !important;
-  overflow: hidden;
-  isolation: isolate;
-}
-
-.search-panel :deep(.el-card__body) {
-  position: relative;
-  z-index: 1;
-  padding: 3px;
-  background-color: var(--el-card-bg-color) !important;
-}
-
-.search-panel-shell {
-  box-sizing: border-box;
 }
 
 .search-panel-fade-enter-active,
@@ -419,74 +405,251 @@ onBeforeUnmount(() => {
   transform: translateY(-4px);
 }
 
-.search-actions {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 25px;
-  padding-bottom: 15px;
-  padding-right: 15px;
+.search-input :deep(.el-input__wrapper),
+.search-input :deep(.el-input__wrapper.is-focus) {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 2px !important;
+}
+
+.search-input :deep(.el-input__inner) {
+  height: 30px;
+  font-size: 13px;
+}
+
+.search-input :deep(.el-input__inner::placeholder) {
+  font-size: 13px;
 }
 
 .search-content {
-  padding: 20px 15px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .search-content-title {
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
   color: var(--el-text-color-primary);
   width: 100%;
   text-align: left !important;
 }
 
-.custom-style {
-  display: flex;
-  justify-content: flex-start;
-  margin-top: 8px;
-}
-
-.custom-style .el-segmented {
-  --el-border-radius-base: 6px;
+.search-type-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .search-date-range {
-  display: flex;
-  gap: 10px;
-  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 2px;
 }
 
 .search-date-field {
-  flex: 1;
   min-width: 0;
 }
 
 .search-date-label {
-  margin-bottom: 4px;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 20px;
+  margin-bottom: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
   color: var(--el-text-color-primary);
   text-align: left;
 }
 
 .search-date-field :deep(.el-date-editor) {
+  width: 100% !important;
+  --el-date-editor-width: 100%;
+  height: 30px;
+}
+
+.search-date-field :deep(.el-input__wrapper) {
+  padding: 0 8px !important;
+  height: 30px !important;
+  border-radius: 10px !important;
+}
+
+.search-date-field :deep(.el-input__inner) {
+  font-size: 11px !important;
+}
+
+.search-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0;
   width: 100%;
 }
 
-.search-input {
-  --el-input-bg-color: var(--el-bg-color-overlay);
-  margin: 4px -3px 0;
-  padding: 0 8px 6px;
-  border-bottom: solid 1px var(--el-border-color);
+.search-btn {
+  width: 100%;
+  height: 36px;
+  border-radius: 9999px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 180ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+</style>
+
+<style lang="scss">
+.email-search .search-panel {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  background: #ffffff !important;
+  color: #051F20 !important;
+  border-radius: 28px !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 20px 48px -10px rgba(0, 0, 0, 0.16), 0 4px 16px rgba(0, 0, 0, 0.06) !important;
+  overflow: hidden !important;
+  isolation: isolate;
+  padding: 18px !important;
 }
 
-.search-input :deep(.el-input__wrapper),
-.search-input :deep(.el-input__wrapper.is-focus) {
-  box-shadow: none !important;
+html.dark .email-search .search-panel,
+.dark .email-search .search-panel,
+[data-theme="dark"] .email-search .search-panel {
+  background: #111318 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 24px 60px -10px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
 }
 
-.search-input :deep(.el-input__inner::placeholder) {
-  font-size: 15px;
+.email-search .search-panel .el-card__body {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  padding: 0 !important;
+  background: transparent !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.email-search .search-input {
+  --el-input-bg-color: transparent;
+  margin: 0;
+  padding: 0 0 4px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+html.dark .email-search .search-input,
+.dark .email-search .search-input,
+[data-theme="dark"] .email-search .search-input {
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+.email-search .search-type-pill {
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--regular-text-color);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 160ms ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: var(--el-text-color-primary);
+  }
+
+  &.active {
+    background: #000000;
+    border-color: #000000;
+    color: #ffffff;
+  }
+}
+
+html.dark .email-search .search-type-pill,
+.dark .email-search .search-type-pill,
+[data-theme="dark"] .email-search .search-type-pill {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+  }
+
+  &.active {
+    background: #ffffff;
+    border-color: #ffffff;
+    color: #000000;
+  }
+}
+
+html.dark .email-search .search-date-field .el-input__wrapper,
+.dark .email-search .search-date-field .el-input__wrapper,
+[data-theme="dark"] .email-search .search-date-field .el-input__wrapper {
+  background: rgba(255, 255, 255, 0.04) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset !important;
+}
+
+.email-search .search-reset-btn {
+  background: rgba(0, 0, 0, 0.05);
+  color: #051F20;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.09);
+  }
+}
+
+.email-search .search-submit-btn {
+  background: #000000;
+  color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+
+  &:hover {
+    background: #27272a;
+    transform: translateY(-1px);
+  }
+}
+
+html.dark .email-search .search-reset-btn,
+.dark .email-search .search-reset-btn,
+[data-theme="dark"] .email-search .search-reset-btn {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f1f5f9;
+  border-color: rgba(255, 255, 255, 0.12);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+
+html.dark .email-search .search-submit-btn,
+.dark .email-search .search-submit-btn,
+[data-theme="dark"] .email-search .search-submit-btn {
+  background: #ffffff;
+  color: #000000;
+  border-color: rgba(255, 255, 255, 0.2);
+
+  &:hover {
+    background: #e4e4e7;
+  }
 }
 </style>

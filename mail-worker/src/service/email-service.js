@@ -60,8 +60,10 @@ const emailService = {
 			throw new BizError(t('emptyAccountId'));
 		}
 
-		if (isNaN(size)) {
+		if (isNaN(size) || size < 1) {
 			size = 10;
+		} else {
+			size = Math.min(Math.floor(size), 50);
 		}
 
 		if (isNaN(full)) {
@@ -70,12 +72,12 @@ const emailService = {
 
 		full = full === 1;
 
-		if (size > 50) {
-			size = 50;
+		const accountRow = await accountService.selectById(c, accountId);
+		if (!accountRow || accountRow.userId !== userId) {
+			throw new BizError(t('noUserAccount'), 403);
 		}
 
 		if (isNaN(allReceive)) {
-			let accountRow = await accountService.selectById(c, accountId);
 			allReceive = accountRow.allReceive;
 		}
 
@@ -305,7 +307,8 @@ const emailService = {
 
 	async delete(c, params, userId) {
 		const { emailIds } = params;
-		const emailIdList = emailIds.split(',').map(Number);
+		const emailIdList = String(emailIds || '').split(',').map(id => Number(id.trim())).filter(id => Number.isInteger(id) && id > 0);
+		if (emailIdList.length === 0) return;
 		const { syncDelete } = await settingService.query(c);
 
 		if (syncDelete === settingConst.syncDelete.OPEN) {
@@ -347,6 +350,10 @@ const emailService = {
 
 		const { resendTokens, r2Domain, send, domainList } = await settingService.query(c);
 
+		if (!Array.isArray(receiveEmail) || receiveEmail.length === 0) {
+			throw new BizError(t('emptyEmail'));
+		}
+
 		let { imageDataList, html } = await attService.toImageUrlHtml(c, content);
 
 		//判断是否关闭发件功能
@@ -354,8 +361,13 @@ const emailService = {
 			throw new BizError(t('disabledSend'), 403);
 		}
 
+		await roleService.ensureDefaultRoleQuota(c);
+
 		const userRow = await userService.selectById(c, userId);
-		const roleRow = await roleService.selectById(c, userRow.type);
+		const roleRow = (await roleService.selectById(c, userRow.type)) || (await roleService.selectDefaultRole(c)) || {
+			...roleService.getDefaultQuota(c),
+			availDomain: ''
+		};
 
 		//判断接收方是不是全部为站内邮箱
 		const allInternal = receiveEmail.every(email => {
@@ -378,7 +390,7 @@ const emailService = {
 		}
 
 		//如果不是管理员，权限设置了发送次数
-		if (roleRow.sendCount) {
+		if (c.env.admin !== userRow.email && roleRow.sendCount) {
 
 			if (userRow.sendCount >= roleRow.sendCount) {
 				if (roleRow.sendType === 'day') throw new BizError(t('daySendLimit'), 403);
@@ -433,7 +445,7 @@ const emailService = {
 
 			emailRow = await this.selectById(c, emailId);
 
-			if (!emailRow) {
+			if (!emailRow || emailRow.userId !== userId) {
 				throw new BizError(t('notExistEmailReply'));
 			}
 
@@ -605,7 +617,7 @@ const emailService = {
 			emailData.inReplyTo = messageId;
 			emailData.relation = messageId;
 		}
-		if (roleRow.sendCount && roleRow.sendType !== 'internal') {
+		if (roleRow?.sendCount && roleRow?.sendType !== 'internal') {
 			await userService.incrUserSendCount(c, receiveEmail.length, userId);
 		}
 
@@ -884,7 +896,7 @@ const emailService = {
 				emailValues.type = emailConst.type.RECEIVE;
 				emailValues.status = emailConst.status.RECEIVE;
 
-				const roleRow = roleList.find(roleRow => roleRow.userId === accountRow.userId);
+				const roleRow = roleList.find(roleRow => roleRow.userId === accountRow.userId) || {};
 
 				let { banEmail, availDomain } = roleRow;
 
@@ -1064,10 +1076,20 @@ const emailService = {
 
 	async latest(c, params, userId) {
 		let { emailId, accountId, allReceive } = params;
+		emailId = Number(emailId) || 0;
+		accountId = Number(accountId);
 		allReceive = Number(allReceive);
 
+		if (isNaN(accountId)) {
+			throw new BizError(t('emptyAccountId'));
+		}
+
+		const accountRow = await accountService.selectById(c, accountId);
+		if (!accountRow || accountRow.userId !== userId) {
+			throw new BizError(t('noUserAccount'), 403);
+		}
+
 		if (isNaN(allReceive)) {
-			let accountRow = await accountService.selectById(c, accountId);
 			allReceive = accountRow.allReceive;
 		}
 
@@ -1097,7 +1119,8 @@ const emailService = {
 
 	async physicsDelete(c, params) {
 		let { emailIds } = params;
-		emailIds = emailIds.split(',').map(Number);
+		emailIds = String(emailIds || '').split(',').map(id => Number(id.trim())).filter(id => Number.isInteger(id) && id > 0);
+		if (emailIds.length === 0) return;
 		await attService.removeByEmailIds(c, emailIds);
 		await starService.removeByEmailIds(c, emailIds);
 		await orm(c).delete(email).where(inArray(email.emailId, emailIds)).run();
@@ -1381,7 +1404,10 @@ const emailService = {
 
 	async read(c, params, userId) {
 		const { emailIds } = params;
-		await orm(c).update(email).set({ unread: emailConst.unread.READ }).where(and(eq(email.userId, userId), inArray(email.emailId, emailIds)));
+		if (!Array.isArray(emailIds) || emailIds.length === 0) return;
+		const validIds = emailIds.map(Number).filter(id => Number.isInteger(id) && id > 0);
+		if (validIds.length === 0) return;
+		await orm(c).update(email).set({ unread: emailConst.unread.READ }).where(and(eq(email.userId, userId), inArray(email.emailId, validIds))).run();
 	}
 };
 

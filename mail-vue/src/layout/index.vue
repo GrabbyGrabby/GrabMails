@@ -2,7 +2,10 @@
   <el-container class="layout">
     <el-aside
         class="aside"
-        :class="uiStore.asideShow ? 'aside-show' : 'el-aside-hide'">
+        :class="[
+          uiStore.asideShow ? 'aside-expanded' : 'aside-collapsed',
+          isMobile ? (uiStore.asideShow ? 'mobile-open' : 'mobile-closed') : ''
+        ]">
       <Aside />
     </el-aside>
     <div
@@ -73,8 +76,11 @@ function handleDockSelect(key) {
 }
 
 const handleResize = () => {
-  isMobile.value = window.innerWidth < 1025
-  uiStore.asideShow = window.innerWidth > 1024
+  const mobile = window.innerWidth < 1025
+  isMobile.value = mobile
+  if (mobile) {
+    uiStore.asideShow = false
+  }
 }
 
 onMounted(() => {
@@ -89,34 +95,74 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss" scoped>
-.el-aside-hide {
-  position: fixed;
-  left: 0;
-  height: 100%;
+.aside {
+  background: #000000 !important;
+  border-radius: 28px;
+  margin: 10px 0 10px 10px;
+  height: calc(100% - 20px) !important;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  transition: width 240ms cubic-bezier(0.16, 1, 0.3, 1), transform 240ms cubic-bezier(0.16, 1, 0.3, 1), background-color 240ms ease;
+  flex-shrink: 0;
+  position: relative;
   z-index: 100;
-  transform: translateX(-100%);
-  transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
-}
 
-.aside-show {
-  -webkit-box-shadow: var(--aside-right-border);
-  box-shadow: var(--aside-right-border);
-  transform: translateX(0);
-  transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 101;
-  @media (max-width: 1025px) {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 101;
-    height: 100%;
-    background: var(--el-bg-color);
+  @media (min-width: 1025px) {
+    &.aside-collapsed {
+      width: 0px !important;
+      min-width: 0px !important;
+      max-width: 0px !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      overflow: hidden !important;
+    }
+    &.aside-expanded {
+      width: 250px !important;
+      min-width: 250px !important;
+      max-width: 250px !important;
+      margin: 10px 0 10px 10px !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    margin: 0 !important;
+    height: 100% !important;
+    border-radius: 0 28px 28px 0 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 101 !important;
+    width: 260px !important;
+    background: #000000 !important;
+    color: #ffffff !important;
+
+    &.mobile-closed {
+      transform: translateX(-100%) !important;
+      pointer-events: none !important;
+      opacity: 0 !important;
+    }
+
+    &.mobile-open {
+      transform: translateX(0) !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
+      pointer-events: auto !important;
+      opacity: 1 !important;
+    }
   }
 }
 
-.el-aside {
-  width: auto;
-  transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
+:root:not(.dark) .aside,
+html:not(.dark) .aside {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
 }
 
 .layout {
@@ -126,21 +172,41 @@ onBeforeUnmount(() => {
   top: 0;
   left: 0;
   overflow: hidden;
+  background: #000000;
 }
 
 .main-container {
-  min-height: 100%;
+  height: calc(100% - 20px);
   background: var(--el-bg-color);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 72px; /* Space for the floating dock */
+  overflow-y: hidden;
+  overflow-x: hidden !important;
+  border-radius: 28px;
+  margin: 10px;
+  border: 1px solid var(--el-border-color);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+
+  @media (max-width: 1025px) {
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    height: 100%;
+  }
 }
 
 .el-main {
   padding: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .el-header {
+  position: relative;
+  z-index: 50;
   background: var(--el-bg-color);
   border-bottom: solid 1px var(--el-border-color);
   padding: 0;

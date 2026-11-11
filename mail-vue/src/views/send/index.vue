@@ -71,8 +71,10 @@ function getEmailList(emailId, size) {
   return emailStore.fetchList(full =>
     emailList(accountId, allReceive, emailId, 0, size, 1, full, sendStore.searchParams)
   ).then(data => {
-    data.latestEmail.reqAccountId = accountId;
-    data.latestEmail.allReceive = allReceive;
+    if (data?.latestEmail) {
+      data.latestEmail.reqAccountId = accountId;
+      data.latestEmail.allReceive = allReceive;
+    }
     return data;
   })
 }
