@@ -6,7 +6,8 @@
 		"dev": "wrangler dev --config wrangler-dev.toml",
 		"test": "wrangler deploy --config wrangler-test.toml",
 		"deploy": "wrangler deploy",
-		"start": "wrangler dev"
+		"start": "wrangler dev",
+		"test:unit": "node --test test/*.test.mjs"
 	},
 	"devDependencies": {
 		"wrangler": "^3.114.17"

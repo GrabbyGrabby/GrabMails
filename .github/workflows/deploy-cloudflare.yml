@@ -23,9 +23,11 @@ jobs:
         working-directory: ./mail-worker
         run: npm install --no-audit --no-fund
 
-      - name: 🔍 Validate Worker Syntax & Schema
+      - name: 🔍 Validate Worker Syntax, Schema & Unit Tests
         working-directory: ./mail-worker
-        run: node -c src/index.js
+        run: |
+          node -c src/index.js
+          npm run test:unit
 
       - name: 🚀 Deploy with Wrangler
         working-directory: ./mail-worker
