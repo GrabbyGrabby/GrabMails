@@ -22,7 +22,7 @@ import {useSettingStore} from "@/store/setting.js";
 import emailScroll from "@/components/email-scroll/index.vue"
 import {emailList, emailDelete, emailLatest, emailRead} from "@/request/email.js";
 import {starAdd, starCancel} from "@/request/star.js";
-import {defineOptions, onMounted, ref, watch} from "vue";
+import {defineOptions, onMounted, onUnmounted, ref, watch} from "vue";
 import {sleep} from "@/utils/time-utils.js";
 import router from "@/router/index.js";
 import { useRoute } from 'vue-router'
@@ -36,9 +36,15 @@ const emailStore = useEmailStore();
 const accountStore = useAccountStore();
 const settingStore = useSettingStore();
 const scroll = ref({})
+let pollingActive = true
 onMounted(() => {
+  pollingActive = true
   emailStore.emailScroll = scroll;
   latest()
+})
+
+onUnmounted(() => {
+  pollingActive = false
 })
 
 
@@ -66,10 +72,11 @@ function jumpContent(email) {
 const existIds = new Set();
 
 async function latest() {
-  while (true) {
+  while (pollingActive) {
 
     let autoRefresh = settingStore.settings.autoRefresh;
     await sleep(autoRefresh > 1 ? autoRefresh * 1000 : 3000);
+    if (!pollingActive) break;
 
     if (route.name !== 'email') {
       continue;

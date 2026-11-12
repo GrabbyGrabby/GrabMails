@@ -13,6 +13,7 @@ import settingService from "./setting-service";
 const attService = {
 
 	async addAtt(c, attachments) {
+		const uploaded = [];
 
 		for (let attachment of attachments) {
 
@@ -29,11 +30,18 @@ const attService = {
 				metadate.cacheControl = `max-age=259200`
 			}
 
-			await r2Service.putObj(c, attachment.key, attachment.content, metadate);
+			try {
+				await r2Service.putObj(c, attachment.key, attachment.content, metadate);
+				uploaded.push(attachment);
+			} catch (e) {
+				console.error(`Failed to store attachment ${attachment.key}:`, e);
+			}
 
 		}
 
-		await orm(c).insert(att).values(attachments).run();
+		if (uploaded.length > 0) {
+			await orm(c).insert(att).values(uploaded).run();
+		}
 	},
 
 	list(c, params, userId) {

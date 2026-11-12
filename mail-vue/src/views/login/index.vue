@@ -391,6 +391,8 @@ const handleWindowResize = () => {
 
 onMounted(() => {
   window.addEventListener('resize', handleWindowResize)
+  window.onTurnstileSuccess = handleTurnstileSuccess
+  window.onTurnstileError = handleTurnstileError
   if (route.query?.code) {
     registerForm.code = String(route.query.code)
     bindForm.code = String(route.query.code)
@@ -399,6 +401,13 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleWindowResize)
+  clearTimeout(turnstileRetryTimer)
+  if (window.onTurnstileSuccess === handleTurnstileSuccess) {
+    delete window.onTurnstileSuccess
+  }
+  if (window.onTurnstileError === handleTurnstileError) {
+    delete window.onTurnstileError
+  }
 })
 
 const oauthKeys = ['linuxdo', 'github', 'google']
@@ -447,6 +456,7 @@ let turnstileId = null
 let botJsError = ref(false)
 let verifyErrorCount = 0
 let turnstileRecoveryAttempted = false
+let turnstileRetryTimer = null
 const turnstileContainer = ref(null)
 const turnstileContainerKey = ref(0)
 
@@ -455,22 +465,35 @@ const hasTurnstile = computed(() => {
   return typeof k === 'string' && k.trim().length > 0;
 });
 
+function handleTurnstileSuccess(token) {
+  verifyToken = token;
+  verifyErrorCount = 0;
+  botJsError.value = false;
+}
+
+function renderRegisterTurnstile(api = window.turnstile) {
+  if (!turnstileContainer.value) return null;
+  return api.render(turnstileContainer.value, {
+    sitekey: settingStore.settings.siteKey,
+    callback: handleTurnstileSuccess,
+    'error-callback': handleTurnstileError
+  });
+}
+
 async function recoverTurnstile() {
   if (!hasTurnstile.value || turnstileRecoveryAttempted) return;
   turnstileRecoveryAttempted = true;
+  clearTimeout(turnstileRetryTimer);
   botJsError.value = false;
   verifyToken = '';
+  verifyErrorCount = 0;
   turnstileId = null;
   turnstileContainerKey.value++;
   try {
     const api = await reloadTurnstileScript();
     await nextTick();
     if (show.value === 'login' || !turnstileContainer.value) return;
-    turnstileId = api.render(turnstileContainer.value, {
-      sitekey: settingStore.settings.siteKey,
-      callback: (token) => { verifyToken = token; },
-      'error-callback': () => { botJsError.value = true; }
-    });
+    turnstileId = renderRegisterTurnstile(api);
   } catch (error) {
     botJsError.value = true;
     console.warn('Turnstile recovery failed', error);
@@ -479,24 +502,29 @@ async function recoverTurnstile() {
   }
 }
 
-window.onTurnstileSuccess = (token) => {
-  verifyToken = token;
-};
-
-window.onTurnstileError = (e) => {
-  if (verifyErrorCount >= 4) return
+function handleTurnstileError(e) {
+  if (verifyErrorCount >= 4) {
+    botJsError.value = true
+    return
+  }
   verifyErrorCount++
   console.warn('人机验加载失败', e)
-  setTimeout(() => {
+  clearTimeout(turnstileRetryTimer)
+  turnstileRetryTimer = setTimeout(() => {
     nextTick(() => {
+      if (show.value === 'login' || !turnstileContainer.value) return
+      if (!window.turnstile?.render) {
+        recoverTurnstile()
+        return
+      }
       if (!turnstileId) {
-        turnstileId = window.turnstile.render('.register-turnstile')
+        turnstileId = renderRegisterTurnstile(window.turnstile)
       } else {
         window.turnstile.reset(turnstileId);
       }
     })
   }, 1500)
-};
+}
 
 window.loadAfter = (e) => {
   console.log('loadAfter')
@@ -704,14 +732,14 @@ function submitRegister() {
       nextTick(() => {
         if (!turnstileId) {
           try {
-            turnstileId = window.turnstile.render('.register-turnstile')
+            turnstileId = renderRegisterTurnstile(window.turnstile)
           } catch (e) {
             botJsError.value = true
             console.log('人机验证js加载失败')
             recoverTurnstile()
           }
         } else {
-          window.turnstile.reset('.register-turnstile')
+          window.turnstile.reset(turnstileId)
         }
       })
     } else if (botJsError.value) {
@@ -750,7 +778,11 @@ function submitRegister() {
         window.turnstile.reset(turnstileId)
       } else {
         nextTick(() => {
-          turnstileId = window.turnstile.render('.register-turnstile')
+          if (!window.turnstile?.render) {
+            recoverTurnstile()
+            return
+          }
+          turnstileId = renderRegisterTurnstile(window.turnstile)
         })
       }
       verifyShow.value = true

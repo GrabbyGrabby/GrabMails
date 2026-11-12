@@ -594,8 +594,8 @@ function close() {
       receiveFlag = true;
     }
     if (subjectFlag && contentFlag && receiveFlag) {
+      show.value = false
       resetForm();
-      close()
       return;
     }
   }

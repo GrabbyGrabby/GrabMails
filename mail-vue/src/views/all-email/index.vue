@@ -91,7 +91,7 @@
 <script setup>
 import {starAdd, starCancel} from "@/request/star.js";
 import emailScroll from "@/components/email-scroll/index.vue"
-import {computed, defineOptions, reactive, ref, watch, onMounted} from "vue";
+import {computed, defineOptions, reactive, ref, watch, onMounted, onUnmounted} from "vue";
 import {useEmailStore} from "@/store/email.js";
 import {
   allEmailList,
@@ -121,9 +121,15 @@ const searchValue = ref('')
 const mySelect = ref()
 const showBathDelete = ref(false)
 const clearLoading = ref(false)
+let pollingActive = true
 
 onMounted(() => {
+  pollingActive = true
   latest();
+})
+
+onUnmounted(() => {
+  pollingActive = false
 })
 
 const openSelect = () => {
@@ -299,11 +305,12 @@ function getEmailList(emailId, size) {
 
 async function latest() {
 
-  while (true) {
+  while (pollingActive) {
 
     let autoRefresh = settingStore.settings.autoRefresh;
 
     await sleep(autoRefresh > 1 ? autoRefresh * 1000 : 3000);
+    if (!pollingActive) break;
 
     if (!sysEmailScroll.value) {
       continue

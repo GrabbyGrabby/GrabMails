@@ -129,7 +129,7 @@
 </template>
 <script setup>
 import {Icon} from "@iconify/vue";
-import {computed, nextTick, reactive, ref, watch} from "vue";
+import {computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch} from "vue";
 import {
   accountList,
   accountAdd,
@@ -173,6 +173,7 @@ const botJsError = ref(false)
 let verifyToken = ''
 let verifyErrorCount = 0
 let turnstileRecoveryAttempted = false
+let turnstileRetryTimer = null
 const turnstileContainer = ref(null)
 const turnstileContainerKey = ref(0)
 let first = true
@@ -206,18 +207,35 @@ const openSelect = () => {
   mySelect.value.toggleMenu()
 }
 
+function handleTurnstileSuccess(token) {
+  verifyToken = token;
+  verifyErrorCount = 0;
+  botJsError.value = false;
+}
+
+function renderAddTurnstile(api = window.turnstile) {
+  if (!turnstileContainer.value) return null;
+  return api.render(turnstileContainer.value, {
+    sitekey: settingStore.settings.siteKey,
+    callback: handleTurnstileSuccess,
+    'error-callback': handleTurnstileError
+  });
+}
+
 async function recoverTurnstile() {
   if (turnstileRecoveryAttempted) return
   turnstileRecoveryAttempted = true
+  clearTimeout(turnstileRetryTimer)
   botJsError.value = false
   verifyToken = ''
+  verifyErrorCount = 0
   turnstileId = null
   turnstileContainerKey.value++
   try {
     const api = await reloadTurnstileScript()
     await nextTick()
     if (!showAdd.value || !turnstileContainer.value) return
-    turnstileId = api.render(turnstileContainer.value)
+    turnstileId = renderAddTurnstile(api)
   } catch (error) {
     botJsError.value = true
     console.warn('Turnstile recovery failed', error)
@@ -226,26 +244,44 @@ async function recoverTurnstile() {
   }
 }
 
-window.onTurnstileError = (e) => {
+function handleTurnstileError(e) {
   if (verifyErrorCount >= 4) {
+    botJsError.value = true
     return
   }
   verifyErrorCount++
   console.warn('人机验加载失败', e)
-  setTimeout(() => {
+  clearTimeout(turnstileRetryTimer)
+  turnstileRetryTimer = setTimeout(() => {
     nextTick(() => {
+      if (!showAdd.value || !turnstileContainer.value) return
+      if (!window.turnstile?.render) {
+        recoverTurnstile()
+        return
+      }
       if (!turnstileId) {
-        turnstileId = window.turnstile.render('.add-email-turnstile')
+        turnstileId = renderAddTurnstile(window.turnstile)
       } else {
         window.turnstile.reset(turnstileId);
       }
     })
   }, 1500)
-};
+}
 
-window.onTurnstileSuccess = (token) => {
-  verifyToken = token;
-};
+onMounted(() => {
+  window.onTurnstileSuccess = handleTurnstileSuccess
+  window.onTurnstileError = handleTurnstileError
+})
+
+onBeforeUnmount(() => {
+  clearTimeout(turnstileRetryTimer)
+  if (window.onTurnstileSuccess === handleTurnstileSuccess) {
+    delete window.onTurnstileSuccess
+  }
+  if (window.onTurnstileError === handleTurnstileError) {
+    delete window.onTurnstileError
+  }
+})
 
 function getSkeletonRows() {
   if (accounts.length > 20) return skeletonRows = 20
@@ -491,14 +527,14 @@ function submit() {
       nextTick(() => {
         if (!turnstileId) {
           try {
-            turnstileId = window.turnstile.render('.add-email-turnstile')
+            turnstileId = renderAddTurnstile(window.turnstile)
           } catch (e) {
             botJsError.value = true
             console.log('人机验证js加载失败')
             recoverTurnstile()
           }
         } else {
-          window.turnstile.reset('.add-email-turnstile')
+          window.turnstile.reset(turnstileId)
         }
       })
     } else if (botJsError.value) {
@@ -535,7 +571,11 @@ function submit() {
         window.turnstile.reset(turnstileId)
       } else {
         nextTick(() => {
-          turnstileId = window.turnstile.render('.add-email-turnstile')
+          if (!window.turnstile?.render) {
+            recoverTurnstile()
+            return
+          }
+          turnstileId = renderAddTurnstile(window.turnstile)
         })
       }
       verifyShow.value = true

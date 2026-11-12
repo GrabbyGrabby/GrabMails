@@ -1132,11 +1132,15 @@ const emailService = {
 	},
 
 	updateEmailStatus(c, params) {
-		const { status, resendEmailId, message } = params;
+		const { status, resendEmailId, message, allowedFrom } = params;
+		const conditions = [eq(email.resendEmailId, resendEmailId)];
+		if (Array.isArray(allowedFrom) && allowedFrom.length > 0) {
+			conditions.push(inArray(email.status, allowedFrom));
+		}
 		return orm(c).update(email).set({
 			status: status,
 			message: message
-		}).where(eq(email.resendEmailId, resendEmailId)).returning().get();
+		}).where(and(...conditions)).returning().get();
 	},
 
 	async selectUserEmailCountList(c, userIds, type, del = isDel.NORMAL) {
@@ -1288,13 +1292,15 @@ const emailService = {
 		// 用 EXISTS 走 status=6 部分索引 + account 主键；避免 IN (SELECT account_id FROM account) 触发全盘扫描
 		await c.env.db.prepare(
 			`UPDATE email
-			 SET status = ${emailConst.status.RECEIVE}
+			 SET is_del = ${isDel.NORMAL},
+			     status = ${emailConst.status.RECEIVE}
 			 WHERE status = ${emailConst.status.SAVING}
 			   AND EXISTS (SELECT 1 FROM account WHERE account.account_id = email.account_id)`
 		).run();
 		await c.env.db.prepare(
 			`UPDATE email
-			 SET status = ${emailConst.status.NOONE}
+			 SET is_del = ${isDel.NORMAL},
+			     status = ${emailConst.status.NOONE}
 			 WHERE status = ${emailConst.status.SAVING}`
 		).run();
 	},

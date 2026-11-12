@@ -80,44 +80,53 @@ const resendService = {
 			return;
 		}
 
+		const status = emailConst.status;
+		const eventTransitions = {
+			'email.delivery_delayed': {
+				status: status.DELAYED,
+				allowedFrom: [status.SENT, status.DELAYED],
+				message: null
+			},
+			'email.delivered': {
+				status: status.DELIVERED,
+				allowedFrom: [status.SENT, status.DELAYED],
+				message: null
+			},
+			'email.bounced': {
+				status: status.BOUNCED,
+				allowedFrom: [status.SENT, status.DELAYED, status.DELIVERED],
+				message: JSON.stringify(body.data.bounce ?? null)
+			},
+			'email.complained': {
+				status: status.COMPLAINED,
+				allowedFrom: [status.SENT, status.DELAYED, status.DELIVERED],
+				message: null
+			},
+			'email.failed': {
+				status: status.FAILED,
+				allowedFrom: [status.SENT, status.DELAYED],
+				message: body.data.failed?.reason ?? null
+			}
+		};
+
+		const transition = eventTransitions[body.type];
+		if (!transition) {
+			return;
+		}
+
 		const params = {
 			resendEmailId: body.data.email_id,
-			status: emailConst.status.SENT
-		}
+			status: transition.status,
+			allowedFrom: transition.allowedFrom,
+			message: transition.message
+		};
 
-		if (body.type === 'email.delivered') {
-			params.status = emailConst.status.DELIVERED
-			params.message = null
-		}
-
-		if (body.type === 'email.complained') {
-			params.status = emailConst.status.COMPLAINED
-			params.message = null
-		}
-
-		if (body.type === 'email.bounced') {
-			let bounce = body.data.bounce
-			bounce = JSON.stringify(bounce);
-			params.status = emailConst.status.BOUNCED
-			params.message = bounce
-		}
-
-		if (body.type === 'email.delivery_delayed') {
-			params.status = emailConst.status.DELAYED
-			params.message = null
-		}
-
-		if (body.type === 'email.failed') {
-			params.status = emailConst.status.FAILED
-			params.message = body.data.failed?.reason
-		}
-
-		const emailRow = await emailService.updateEmailStatus(c, params)
+		const emailRow = await emailService.updateEmailStatus(c, params);
 
 		if (!emailRow) {
-			// 未知邮件事件（如历史数据、重复投递、测试事件）：记录日志后正常返回，
+			// 未知邮件事件或非法的逆向/重复状态跃迁：记录日志后正常返回，
 			// 避免 Resend 因连续收到 500 而熔断关闭 Webhook
-			console.warn(`resend webhook: unknown email_id ${params.resendEmailId}, type ${body.type}`);
+			console.warn(`resend webhook: skipped or unknown email_id ${params.resendEmailId}, type ${body.type}`);
 			return;
 		}
 
