@@ -34,8 +34,29 @@ const dbInit = {
 		await this.v3_2DB(c);
 		await this.v3_3DB(c);
 		await this.v3_4DB(c);
+		await this.v3_5DB(c);
 		await settingService.refresh(c);
 		return c.text('success');
+	},
+
+	async v3_5DB(c) {
+		try {
+			await c.env.db.batch([
+				c.env.db.prepare(`
+					CREATE TABLE IF NOT EXISTS suppression (
+						suppression_id INTEGER PRIMARY KEY AUTOINCREMENT,
+						email TEXT NOT NULL COLLATE NOCASE,
+						type TEXT NOT NULL DEFAULT 'bounce',
+						scope TEXT NOT NULL DEFAULT 'global',
+						reason TEXT DEFAULT '',
+						create_time TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+					);
+				`),
+				c.env.db.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_suppression_email_type ON suppression(email, type);`)
+			]);
+		} catch (e) {
+			console.warn(`Skip suppression table init: ${e.message}`);
+		}
 	},
 
 	async v3_4DB(c) {

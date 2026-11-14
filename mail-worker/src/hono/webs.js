@@ -1,5 +1,5 @@
 import app from './hono';
-import '../security/security'
+import '../security/security';
 
 import '../api/email-api';
 import '../api/user-api';
@@ -12,13 +12,17 @@ import '../api/r2-api';
 import '../api/resend-api';
 import '../api/user-api';
 import '../api/my-api';
-import '../api/role-api'
-import '../api/all-email-api'
-import '../api/init-api'
-import '../api/analysis-api'
-import '../api/reg-key-api'
-import '../api/public-api'
-import '../api/telegram-api'
-import '../api/oauth-api'
-import '../api/privacy-sec-api'
+import '../api/role-api';
+import '../api/all-email-api';
+import '../api/init-api';
+import '../api/analysis-api';
+import '../api/reg-key-api';
+import '../api/public-api';
+import '../api/telegram-api';
+import '../api/oauth-api';
+import '../api/privacy-sec-api';
+import '../api/unsubscribe-api';
+import '../api/track-api';
+import '../api/ai-api';
+
 export default app;

@@ -1,5 +1,6 @@
 import emailUtils from '../utils/email-utils';
 import { settingConst } from '../const/entity-const';
+import { runAiWithFallback } from '../utils/ai-helper';
 
 const aiService = {
 	async extractCode(c, email, options = {}) {
@@ -19,7 +20,7 @@ const aiService = {
 				return '';
 			}
 
-			const result = await ai.run(c.env.ai_model || '@cf/meta/llama-3.1-8b-instruct-fast', {
+			const { result } = await runAiWithFallback(ai, c.env.ai_model, {
 				messages: [
 					{
 						role: 'system',

@@ -1,5 +1,6 @@
 import emailService from './email-service';
 import settingService from './setting-service';
+import suppressionService from './suppression-service';
 import { emailConst } from '../const/entity-const';
 import { resolveResendWebhookTransition } from '../utils/resend-webhook-transitions.mjs';
 
@@ -83,6 +84,19 @@ const resendService = {
 		}
 
 		const emailRow = await emailService.updateEmailStatus(c, params);
+
+		// Automatically ingest bounce and complaint events into suppression list
+		if (body.type === 'email.bounced' || body.type === 'email.complained') {
+			const recipientList = Array.isArray(body.data?.to) ? body.data.to : [emailRow?.toEmail].filter(Boolean);
+			const suppType = body.type === 'email.bounced' ? 'bounce' : 'complaint';
+			for (const addr of recipientList) {
+				await suppressionService.addSuppression(c, {
+					email: addr,
+					type: suppType,
+					reason: params.message || body.type
+				});
+			}
+		}
 
 		if (!emailRow) {
 			// 未知邮件事件或非法的逆向/重复状态跃迁：记录日志后正常返回，

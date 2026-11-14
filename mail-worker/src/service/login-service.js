@@ -19,6 +19,7 @@ import dayjs from 'dayjs';
 import { toUtc } from '../utils/date-uitil';
 import { t } from '../i18n/i18n.js';
 import verifyRecordService from './verify-record-service';
+import { isDisposableDomain } from '../utils/disposable-domains';
 
 const loginService = {
 
@@ -40,6 +41,10 @@ const loginService = {
 
 		if (typeof email !== 'string' || !verifyUtils.isEmail(email)) {
 			throw new BizError(t('notEmail'));
+		}
+
+		if (isDisposableDomain(email)) {
+			throw new BizError(t('disposableEmailBlocked') || 'Disposable/temporary email addresses are not permitted');
 		}
 
 		if (typeof password !== 'string') {

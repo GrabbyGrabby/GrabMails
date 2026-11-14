@@ -43,7 +43,25 @@
             </div>
           </template>
         </el-input-tag>
-        <el-input v-model="form.subject" :placeholder="t('subject')" />
+        <div class="subject-row" style="display: flex; gap: 8px; align-items: center;">
+          <el-input v-model="form.subject" :placeholder="t('subject')" style="flex: 1;" />
+          <el-dropdown trigger="click" @command="applyAiSubject">
+            <el-button type="info" plain :loading="aiSubjectLoading" @click="fetchAiSubjects" size="small" style="height: 32px; border-radius: 6px;">
+              <Icon icon="fluent:sparkle-24-filled" width="15" height="15" style="margin-right: 4px; color: #8b5cf6;" />
+              AI Subject
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item v-if="aiSubjectList.length === 0" disabled>
+                  Click "AI Subject" to generate suggestions
+                </el-dropdown-item>
+                <el-dropdown-item v-for="(sub, idx) in aiSubjectList" :key="idx" :command="sub">
+                  {{ sub }}
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
         <tinyEditor :def-value="defValue" ref="editor" @change="change" @focus="focusChange" />
         <div class="button-item">
           <div class="att-add" @click="chooseFile">
@@ -123,7 +141,8 @@ import db from "@/db/db.js";
 import dayjs from "dayjs";
 import {useI18n} from "vue-i18n";
 import router from "@/router/index.js";
-import {ElMessageBox} from "element-plus";
+import {ElMessageBox, ElMessage} from "element-plus";
+import { aiSubjectLines, aiAssist } from "@/request/ai.js";
 
 defineExpose({
   open,
@@ -171,6 +190,93 @@ const form = reactive({
 })
 
 const selectRecipientList = ref([])
+
+// Email byte size calculation & Gmail clipping alert
+const emailByteSize = computed(() => {
+  const c = form.content || '';
+  const s = form.subject || '';
+  try {
+    return new Blob([c, s]).size;
+  } catch (e) {
+    return (c + s).length;
+  }
+});
+
+const isGmailClippingRisk = computed(() => emailByteSize.value > 102400); // 100 KB threshold (Gmail clips at 102 KB)
+
+const emailSizeFormatted = computed(() => {
+  const kb = (emailByteSize.value / 1024).toFixed(1);
+  return `${kb} KB / 102 KB`;
+});
+
+const emailSizeStatusClass = computed(() => {
+  if (isGmailClippingRisk.value) return 'gauge-danger';
+  if (emailByteSize.value > 81920) return 'gauge-warning';
+  return 'gauge-safe';
+});
+
+const emailSizeTooltip = computed(() => {
+  if (isGmailClippingRisk.value) {
+    return 'Warning: Message exceeds 102KB. Gmail will clip this email with a "[Message clipped] View entire message" link!';
+  }
+  return 'Real-time email HTML byte size. Keep under 102KB to prevent Gmail message clipping.';
+});
+
+// AI Writing & Subject Assistance
+const aiSubjectLoading = ref(false);
+const aiSubjectList = ref([]);
+
+async function fetchAiSubjects() {
+  const content = form.content || form.text || '';
+  const topic = form.subject || '';
+  if (!content && !topic) {
+    ElMessage.warning('Please enter some email content or a topic first so AI can suggest subjects.');
+    return;
+  }
+  aiSubjectLoading.value = true;
+  try {
+    const res = await aiSubjectLines(content, topic);
+    const list = Array.isArray(res) ? res : (res?.data || []);
+    if (list.length > 0) {
+      aiSubjectList.value = list;
+      ElMessage.success('Generated AI subject suggestions!');
+    }
+  } catch (e) {
+    ElMessage.error(e.message || 'Failed to generate AI subjects');
+  } finally {
+    aiSubjectLoading.value = false;
+  }
+}
+
+function applyAiSubject(subject) {
+  form.subject = subject;
+  ElMessage.success('Subject line applied!');
+}
+
+const aiPolishLoading = ref(false);
+async function triggerAiPolish() {
+  const bodyText = form.content || form.text || '';
+  if (!bodyText || bodyText.trim().length < 10) {
+    ElMessage.warning('Please enter content to polish');
+    return;
+  }
+  aiPolishLoading.value = true;
+  try {
+    const res = await aiAssist(bodyText, 'polish');
+    const polished = res?.text || res?.data?.text;
+    if (polished) {
+      form.content = polished;
+      if (editor.value?.setContent) {
+        editor.value.setContent(polished);
+      }
+      ElMessage.success('Content polished with AI!');
+    }
+  } catch (e) {
+    ElMessage.error(e.message || 'Failed to polish content with AI');
+  } finally {
+    aiPolishLoading.value = false;
+  }
+}
 
 const contacts = computed(() => writerStore.sendRecipientRecord.map(item => ({email: item})))
 const separateSendLabel = computed(() => t(form.sendType === 'forward' ? 'separateForward' : 'separateSend'))
