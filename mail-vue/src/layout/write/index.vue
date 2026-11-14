@@ -10,8 +10,19 @@
           <span class="sender-name">{{ form.name }}</span>
           <span class="send-email"><{{ form.sendEmail }}></span>
         </div>
-        <div @click="close" style="cursor: pointer;">
-          <Icon icon="material-symbols-light:close-rounded" width="22" height="22"/>
+        <div class="title-right" style="display: flex; align-items: center; gap: 10px;">
+          <el-button
+            class="ai-compose-pill-btn"
+            type="primary"
+            size="small"
+            @click="openAiComposeDialog"
+          >
+            <Icon icon="fluent:sparkle-24-filled" width="15" height="15" style="margin-right: 4px;" />
+            Compose with AI
+          </el-button>
+          <div @click="close" style="cursor: pointer; display: flex; align-items: center;">
+            <Icon icon="material-symbols-light:close-rounded" width="22" height="22"/>
+          </div>
         </div>
       </div>
       <div class="container">
@@ -46,17 +57,25 @@
         <div class="subject-row" style="display: flex; gap: 8px; align-items: center;">
           <el-input v-model="form.subject" :placeholder="t('subject')" style="flex: 1;" />
           <el-dropdown trigger="click" @command="applyAiSubject">
-            <el-button type="info" plain :loading="aiSubjectLoading" @click="fetchAiSubjects" size="small" style="height: 32px; border-radius: 6px;">
+            <el-button
+              type="primary"
+              plain
+              :loading="aiSubjectLoading"
+              @click.stop="fetchAiSubjects"
+              size="default"
+              class="ai-subject-btn"
+            >
               <Icon icon="fluent:sparkle-24-filled" width="15" height="15" style="margin-right: 4px; color: #8b5cf6;" />
-              AI Subject
+              <span>AI Subject</span>
+              <Icon icon="ep:arrow-down" width="12" height="12" style="margin-left: 4px;" />
             </el-button>
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item v-if="aiSubjectList.length === 0" disabled>
-                  Click "AI Subject" to generate suggestions
+                  {{ aiSubjectLoading ? 'Generating AI subject suggestions...' : 'Click "AI Subject" to generate suggestions' }}
                 </el-dropdown-item>
                 <el-dropdown-item v-for="(sub, idx) in aiSubjectList" :key="idx" :command="sub">
-                  {{ sub }}
+                  ✨ {{ sub }}
                 </el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -64,11 +83,54 @@
         </div>
         <tinyEditor :def-value="defValue" ref="editor" @change="change" @focus="focusChange" />
         <div class="button-item">
-          <div class="att-add" @click="chooseFile">
-            <Icon icon="iconamoon:attachment-fill" width="24" height="24"/>
-          </div>
-          <div class="att-clear" @click="clearContent">
-            <Icon icon="icon-park-outline:clear-format" width="24" height="24 "/>
+          <div class="btn-left-actions" style="display: flex; align-items: center; gap: 10px;">
+            <div class="att-add" @click="chooseFile" title="Add attachment">
+              <Icon icon="iconamoon:attachment-fill" width="24" height="24"/>
+            </div>
+            <div class="att-clear" @click="clearContent" title="Clear formatting">
+              <Icon icon="icon-park-outline:clear-format" width="24" height="24"/>
+            </div>
+            <el-dropdown trigger="click" @command="handleAiAssistCommand">
+              <el-button
+                type="primary"
+                size="small"
+                plain
+                :loading="aiAssistLoading"
+                class="ai-assist-toolbar-btn"
+              >
+                <Icon icon="fluent:sparkle-24-filled" width="15" height="15" style="margin-right: 4px; color: #8b5cf6;" />
+                <span>AI Assist</span>
+                <Icon icon="ep:arrow-down" width="12" height="12" style="margin-left: 4px;" />
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="compose">
+                    <Icon icon="solar:pen-new-square-linear" width="16" height="16" style="margin-right: 6px; color: #8b5cf6;" />
+                    Compose from Prompt...
+                  </el-dropdown-item>
+                  <el-dropdown-item divided command="polish">
+                    <Icon icon="solar:magic-stick-3-linear" width="16" height="16" style="margin-right: 6px; color: #10b981;" />
+                    Polish & Fix Grammar
+                  </el-dropdown-item>
+                  <el-dropdown-item command="professional">
+                    <Icon icon="solar:case-minimalistic-linear" width="16" height="16" style="margin-right: 6px; color: #3b82f6;" />
+                    Make Professional Tone
+                  </el-dropdown-item>
+                  <el-dropdown-item command="shorten">
+                    <Icon icon="solar:minimize-square-3-linear" width="16" height="16" style="margin-right: 6px; color: #f59e0b;" />
+                    Make Shorter & Concise
+                  </el-dropdown-item>
+                  <el-dropdown-item command="expand">
+                    <Icon icon="solar:maximize-square-3-linear" width="16" height="16" style="margin-right: 6px; color: #6366f1;" />
+                    Expand with Details
+                  </el-dropdown-item>
+                  <el-dropdown-item command="summarize">
+                    <Icon icon="solar:document-text-linear" width="16" height="16" style="margin-right: 6px; color: #06b6d4;" />
+                    Summarize Key Points
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </div>
           <div class="att-list">
             <div class="att-item" v-for="(item,index) in form.attachments" :key="index">
@@ -79,7 +141,14 @@
                     width="22" height="22"/>
             </div>
           </div>
-          <div>
+          <div class="btn-right-actions" style="display: flex; align-items: center; gap: 12px; margin-left: auto;">
+            <el-tooltip effect="dark" placement="top" :content="emailSizeTooltip">
+              <div class="deliverability-gauge" :class="emailSizeStatusClass">
+                <span class="gauge-dot"></span>
+                <span class="gauge-text">{{ emailSizeFormatted }}</span>
+                <span v-if="isGmailClippingRisk" class="gauge-clip-alert">⚠️ Clips in Gmail</span>
+              </div>
+            </el-tooltip>
             <el-dropdown split-button type="primary" trigger="click" @click="sendEmail" @command="selectSendMode">
               {{ sendButtonLabel }}
               <template #dropdown>
@@ -118,6 +187,45 @@
         <el-button type="primary" @click="chooseContact">{{t('selectContacts')}}</el-button>
       </div>
     </el-dialog>
+    <!-- AI Compose Dialog -->
+    <el-dialog
+      v-model="showAiComposeModal"
+      title="✨ Compose with Cloudflare Workers AI"
+      width="540px"
+      append-to-body
+      class="ai-compose-dialog"
+    >
+      <div class="ai-compose-body">
+        <p class="ai-compose-desc">
+          Describe the email you want to send. Cloudflare Workers AI will generate an engaging subject line and deliverability-optimized email body.
+        </p>
+        <el-input
+          v-model="aiComposePrompt"
+          type="textarea"
+          :rows="4"
+          placeholder="e.g. Write a friendly follow-up email to a prospective client asking for feedback on our newsletter software proposal..."
+          style="margin-top: 10px; margin-bottom: 14px;"
+        />
+        <div class="ai-tone-row">
+          <span class="ai-tone-label">Tone:</span>
+          <el-radio-group v-model="aiComposeTone" size="small">
+            <el-radio-button :value="'professional'" label="Professional" />
+            <el-radio-button :value="'friendly'" label="Friendly" />
+            <el-radio-button :value="'direct'" label="Direct" />
+            <el-radio-button :value="'persuasive'" label="Persuasive" />
+          </el-radio-group>
+        </div>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="showAiComposeModal = false">Cancel</el-button>
+          <el-button type="primary" :loading="aiComposeLoading" @click="executeAiCompose">
+            <Icon icon="fluent:sparkle-24-filled" width="16" height="16" style="margin-right: 4px;" />
+            Generate Email
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 <script setup>
@@ -142,13 +250,14 @@ import dayjs from "dayjs";
 import {useI18n} from "vue-i18n";
 import router from "@/router/index.js";
 import {ElMessageBox, ElMessage} from "element-plus";
-import { aiSubjectLines, aiAssist } from "@/request/ai.js";
+import { aiSubjectLines, aiAssist, aiCompose } from "@/request/ai.js";
 
 defineExpose({
   open,
   openReply,
   openForward,
-  openDraft
+  openDraft,
+  openAiCompose
 })
 
 const {t} = useI18n()
@@ -253,28 +362,77 @@ function applyAiSubject(subject) {
   ElMessage.success('Subject line applied!');
 }
 
-const aiPolishLoading = ref(false);
-async function triggerAiPolish() {
-  const bodyText = form.content || form.text || '';
-  if (!bodyText || bodyText.trim().length < 10) {
-    ElMessage.warning('Please enter content to polish');
+const showAiComposeModal = ref(false);
+const aiComposePrompt = ref('');
+const aiComposeTone = ref('professional');
+const aiComposeLoading = ref(false);
+
+function openAiComposeDialog() {
+  showAiComposeModal.value = true;
+}
+
+function openAiCompose() {
+  show.value = true;
+  initAccount();
+  openAiComposeDialog();
+}
+
+async function executeAiCompose() {
+  if (!aiComposePrompt.value || !aiComposePrompt.value.trim()) {
+    ElMessage.warning('Please enter a description for the email.');
     return;
   }
-  aiPolishLoading.value = true;
+  aiComposeLoading.value = true;
   try {
-    const res = await aiAssist(bodyText, 'polish');
-    const polished = res?.text || res?.data?.text;
-    if (polished) {
-      form.content = polished;
-      if (editor.value?.setContent) {
-        editor.value.setContent(polished);
-      }
-      ElMessage.success('Content polished with AI!');
+    const res = await aiCompose(aiComposePrompt.value.trim(), aiComposeTone.value, form.content || form.text || '');
+    const data = res?.data || res;
+    if (data?.subject) {
+      form.subject = data.subject;
     }
-  } catch (e) {
-    ElMessage.error(e.message || 'Failed to polish content with AI');
+    if (data?.body) {
+      form.content = data.body;
+      if (editor.value?.setContent) {
+        editor.value.setContent(data.body);
+      }
+    }
+    showAiComposeModal.value = false;
+    ElMessage.success('Email generated with Cloudflare Workers AI!');
+  } catch (err) {
+    ElMessage.error(err.message || 'Failed to generate email');
   } finally {
-    aiPolishLoading.value = false;
+    aiComposeLoading.value = false;
+  }
+}
+
+const aiAssistLoading = ref(false);
+
+async function handleAiAssistCommand(action) {
+  if (action === 'compose') {
+    openAiComposeDialog();
+    return;
+  }
+
+  const currentText = form.content || form.text || '';
+  if (!currentText || currentText.trim().length < 5) {
+    ElMessage.warning('Please enter some email content first to assist.');
+    return;
+  }
+
+  aiAssistLoading.value = true;
+  try {
+    const res = await aiAssist(currentText, action);
+    const text = res?.text || res?.data?.text;
+    if (text) {
+      form.content = text;
+      if (editor.value?.setContent) {
+        editor.value.setContent(text);
+      }
+      ElMessage.success(`Content updated (${action})!`);
+    }
+  } catch (err) {
+    ElMessage.error(err.message || 'Failed to process with AI');
+  } finally {
+    aiAssistLoading.value = false;
   }
 }
 

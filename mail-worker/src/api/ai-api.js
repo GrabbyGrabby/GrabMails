@@ -79,7 +79,8 @@ app.post('/ai/assist', async (c) => {
 		polish: 'Improve clarity, flow, and fix any grammatical or spelling issues while preserving meaning.',
 		shorten: 'Make this concise, punchy, and clear for a quick email read.',
 		expand: 'Expand on these key points with professional detail and context suitable for a newsletter.',
-		professional: 'Rewrite this with a polished, confident, professional business tone.'
+		professional: 'Rewrite this with a polished, confident, professional business tone.',
+		summarize: 'Summarize the key message and action items of this email clearly in 2-3 bullet points.'
 	};
 
 	const instruction = actionPrompts[action] || actionPrompts.polish;
@@ -105,5 +106,87 @@ app.post('/ai/assist', async (c) => {
 	} catch (err) {
 		console.error('AI assistant error:', err);
 		throw new BizError('Failed to process text with AI: ' + (err.message || 'AI error'), 500);
+	}
+});
+
+app.post('/ai/compose', async (c) => {
+	const body = await c.req.json().catch(() => ({}));
+	const { prompt, tone = 'professional', context = '' } = body;
+
+	const cleanPrompt = stripHtmlForAi(prompt || '');
+	if (!cleanPrompt) {
+		throw new BizError('Please provide a prompt or description for the email to compose', 400);
+	}
+
+	const ai = c.env.ai;
+	if (!ai) {
+		throw new BizError('Workers AI binding not configured in environment', 503);
+	}
+
+	const toneMap = {
+		professional: 'polite, clear, respectful and business-ready',
+		friendly: 'warm, welcoming, conversational and upbeat',
+		direct: 'concise, action-driven, and straight to the point',
+		persuasive: 'compelling, value-focused, and persuasive without spam triggers'
+	};
+	const toneStyle = toneMap[tone] || toneMap.professional;
+
+	try {
+		const { result: aiResp } = await runAiWithFallback(ai, c.env.ai_model, {
+			messages: [
+				{
+					role: 'system',
+					content: `You are an elite email copywriter. Compose an email based on the prompt.
+Tone: ${toneStyle}.
+Deliverability Rules:
+- No spam-trigger words, no ALL CAPS, no excessive exclamation marks
+- Deliver clear formatting with paragraph breaks
+Return ONLY a valid JSON object with keys "subject" and "body".
+Format example:
+{"subject": "Follow up regarding project proposal", "body": "Hi there,\\n\\nI wanted to follow up..."}`
+				},
+				{
+					role: 'user',
+					content: `Prompt: ${cleanPrompt}${context ? `\nAdditional Context: ${stripHtmlForAi(context).slice(0, 1000)}` : ''}`
+				}
+			],
+			temperature: 0.6,
+			max_tokens: 1024
+		});
+
+		const rawOutput = typeof aiResp === 'string' ? aiResp : (aiResp?.response || '');
+		let subject = '';
+		let content = '';
+
+		try {
+			const jsonMatch = rawOutput.match(/\{[\s\S]*\}/);
+			if (jsonMatch) {
+				const parsed = JSON.parse(jsonMatch[0]);
+				subject = parsed.subject || '';
+				content = parsed.body || parsed.content || '';
+			}
+		} catch (e) {
+			// fall through to text parsing
+		}
+
+		if (!content) {
+			// If not strict JSON, treat lines
+			const lines = rawOutput.split('\n').filter(Boolean);
+			if (lines.length > 1 && (lines[0].toLowerCase().startsWith('subject:') || lines[0].startsWith('#'))) {
+				subject = lines[0].replace(/^subject:\s*|^#+\s*/i, '').trim();
+				content = lines.slice(1).join('\n').trim();
+			} else {
+				subject = cleanPrompt.slice(0, 50);
+				content = rawOutput.replace(/^```json\s*|```$/g, '').trim();
+			}
+		}
+
+		return c.json(result.ok({
+			subject: subject || cleanPrompt.slice(0, 50),
+			body: content || cleanPrompt
+		}));
+	} catch (err) {
+		console.error('AI compose error:', err);
+		throw new BizError('Failed to compose email with AI: ' + (err.message || 'AI error'), 500);
 	}
 });

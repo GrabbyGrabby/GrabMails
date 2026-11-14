@@ -8,7 +8,12 @@ export function aiAssist(text, action = 'polish') {
     return http.post('/ai/assist', { text, action });
 }
 
+export function aiCompose(prompt, tone = 'professional', context = '') {
+    return http.post('/ai/compose', { prompt, tone, context });
+}
+
 export default {
     aiSubjectLines,
-    aiAssist
+    aiAssist,
+    aiCompose
 };

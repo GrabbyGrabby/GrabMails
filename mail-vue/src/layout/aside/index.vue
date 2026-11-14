@@ -18,6 +18,11 @@
           <span>{{ $t('compose') }}</span>
         </button>
 
+        <button v-perm="'email:send'" class="compose-bar ai-compose-side-btn" type="button" @click="openAiCompose">
+          <Icon icon="fluent:sparkle-24-filled" width="16" height="16" style="color: #c084fc; margin-right: 6px;" />
+          <span>Compose with AI</span>
+        </button>
+
         <el-menu :collapse="false" @select="navigateMenu" text-color="#fff" active-text-color="#ffffff" style="margin-top: 6px">
           <el-menu-item @click="navigateMenu('email')" index="email"
                         :class="route.meta.name === 'email' ? 'choose-item' : ''">
@@ -304,6 +309,24 @@ html:not(.dark) .el-menu-item {
     color: #ffffff !important;
     border: 1px solid rgba(255, 255, 255, 0.28);
     font-weight: 600;
+  }
+}
+
+.ai-compose-side-btn {
+  background: rgba(139, 92, 246, 0.16) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(168, 85, 247, 0.35) !important;
+  margin-top: -6px;
+  margin-bottom: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: rgba(139, 92, 246, 0.28) !important;
+    border-color: rgba(168, 85, 247, 0.6) !important;
+    box-shadow: 0 0 14px rgba(168, 85, 247, 0.3);
   }
 }
 </style>
