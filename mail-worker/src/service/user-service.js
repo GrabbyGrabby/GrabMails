@@ -1,3 +1,4 @@
+import { isStrongPassword } from '../utils/password-policy.js';
 import BizError from '../error/biz-error';
 import accountService from './account-service';
 import orm from '../entity/orm';
@@ -68,7 +69,7 @@ const userService = {
 
 		const { password } = params;
 
-		if (typeof password !== 'string' || password.length < 6) {
+		if (!isStrongPassword(password)) {
 			throw new BizError(t('pwdMinLength'));
 		}
 		if (password.length > 30) {
@@ -382,7 +383,7 @@ const userService = {
 			throw new BizError(t('notEmailDomain'));
 		}
 
-		if (typeof password !== 'string' || password.length < 6) {
+		if (!isStrongPassword(password)) {
 			throw new BizError(t('pwdMinLength'));
 		}
 
