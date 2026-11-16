@@ -140,7 +140,8 @@ claude mcp add grabmails -- https://grabby-mail.grabbymark.workers.dev/mcp
 
 ### 1. Install Dependencies
 ```bash
-pnpm install
+pnpm --dir mail-vue install --frozen-lockfile
+pnpm --dir mail-worker install --frozen-lockfile
 ```
 
 ### 2. Configure Cloudflare Resources (`mail-worker/wrangler.toml`)
@@ -164,15 +165,19 @@ binding = "ai"
 
 ### 3. Build & Deploy
 ```bash
-# Build Vue frontend
-pnpm --prefix mail-vue run build
-
-# Deploy Cloudflare Worker & Static Assets
+# Build and verify the production bundle from current source
 cd mail-worker
+pnpm run test:unit
+pnpm exec wrangler deploy --dry-run --outdir .wrangler/deploy-check
+node --test test/deployment/*.test.mjs
+
+# Deploy Cloudflare Worker & freshly built static assets
 pnpm exec wrangler deploy
 ```
 
 ---
+
+Production uses `mail-worker/src/index.js` as the Wrangler entry point. The build hook builds the frontend into ignored `mail-vue/dist`; missing build dependencies fail the deployment instead of reusing committed assets. CI installs both projects with frozen lockfiles and tests the generated Worker bundle on pull requests before deploying main. The optional `build-harden.mjs` utility is not part of production deployment, and its generated `dist-worker` output is no longer tracked.
 
 ## License
 MIT &copy; GrabMails

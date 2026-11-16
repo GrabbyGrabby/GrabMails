@@ -47,17 +47,10 @@ function checkSyntaxAsEsm(filePath, tempCheckPath) {
 	execSync(`"${process.execPath}" --check "${tempCheckPath}"`, { stdio: 'pipe' });
 }
 
-const forceBuild = process.argv.includes('--force') || process.env.FORCE_BUILD === '1';
 const vueNodeModules = resolve(vueDir, 'node_modules');
-const hasPrebuilt = existsSync(resolve(distDir, 'index.html')) && existsSync(distWorkerEntry);
-
-if (!forceBuild && hasPrebuilt && (process.env.SKIP_BUILD === '1' || !existsSync(vueNodeModules) || !hasPnpm())) {
-	console.log('[build-harden] Pre-built hardened dist & dist-worker detected; skipping rebuild.');
-	process.exit(0);
-}
-
+// This optional hardening utility must never silently reuse stale output.
 if (!existsSync(vueNodeModules) || !hasPnpm()) {
-	throw new Error('Cannot build: mail-vue dependencies or pnpm are missing and no pre-built artifacts exist.');
+    throw new Error('Cannot build: install mail-vue dependencies and pnpm first.');
 }
 
 rmSync(tmpDir, { recursive: true, force: true });
