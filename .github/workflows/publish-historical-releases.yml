@@ -1,0 +1,30 @@
+name: Publish v1.0 through v1.2 releases
+on:
+  push:
+    branches: [release/publish-historical]
+    paths:
+      - '.github/workflows/publish-historical-releases.yml'
+      - 'scripts/publish_historical_releases.py'
+      - 'scripts/release.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: versioned-releases
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Test release publishing
+        run: python3 -m unittest discover -s tests -p 'test*release*.py'
+      - name: Publish existing version tags as GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/publish_historical_releases.py
