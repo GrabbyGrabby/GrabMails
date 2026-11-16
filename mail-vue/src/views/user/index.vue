@@ -377,6 +377,7 @@
 </template>
 
 <script setup>
+import { isStrongPassword } from '@/utils/password-policy.js';
 import {defineOptions, h, reactive, ref, watch} from 'vue'
 import {
   userList,
@@ -745,7 +746,7 @@ function submit() {
     return
   }
 
-  if (addForm.password.length < 6) {
+  if (!isStrongPassword(addForm.password)) {
     ElMessage({
       message: t('pwdLengthMsg'),
       type: "error",
@@ -960,7 +961,7 @@ function updatePwd() {
     return
   }
 
-  if (userForm.password.length < 6) {
+  if (!isStrongPassword(userForm.password)) {
     ElMessage({
       message: t('pwdLengthMsg'),
       type: 'error',

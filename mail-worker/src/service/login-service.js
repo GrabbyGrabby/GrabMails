@@ -1,3 +1,4 @@
+import { isStrongPassword } from '../utils/password-policy.js';
 import BizError from '../error/biz-error';
 import userService from './user-service';
 import emailUtils from '../utils/email-utils';
@@ -67,7 +68,7 @@ const loginService = {
 			throw new BizError(t('pwdLengthLimit'));
 		}
 
-		if (password.length < 6) {
+		if (!isStrongPassword(password)) {
 			throw new BizError(t('pwdMinLength'));
 		}
 

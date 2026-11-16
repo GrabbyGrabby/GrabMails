@@ -113,6 +113,7 @@
   </div>
 </template>
 <script setup>
+import { isStrongPassword } from '@/utils/password-policy.js';
 import {reactive, ref, computed, defineOptions} from 'vue'
 import {resetPassword, userDelete} from "@/request/my.js";
 import {useUserStore} from "@/store/user.js";
@@ -234,7 +235,7 @@ function submitPwd() {
     return
   }
 
-  if (form.password.length < 6) {
+  if (!isStrongPassword(form.password)) {
     ElMessage({
       message: t('pwdLengthMsg'),
       type: 'error',

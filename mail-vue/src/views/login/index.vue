@@ -342,6 +342,7 @@
 </template>
 
 <script setup>
+import { isStrongPassword } from '@/utils/password-policy.js';
 import router from "@/router";
 import {useRoute} from "vue-router";
 import {computed, nextTick, onMounted, onBeforeUnmount, reactive, ref} from "vue";
@@ -712,7 +713,7 @@ function submitRegister() {
     ElMessage({ message: t('emptyPwdMsg'), type: 'error', plain: true })
     return
   }
-  if (registerForm.password.length < 6) {
+  if (!isStrongPassword(registerForm.password)) {
     ElMessage({ message: t('pwdLengthMsg'), type: 'error', plain: true })
     return
   }

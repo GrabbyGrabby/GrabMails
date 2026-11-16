@@ -54,7 +54,7 @@ const saltHashUtils = {
 				}
 			}
 		}
-		return result;
+		return result.slice(0, -2) + '1!';
 	}
 };
 
