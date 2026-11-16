@@ -84,6 +84,16 @@ GrabMails exposes a Model Context Protocol endpoint at `/mcp` supporting tools:
 - `create_event`: Schedule calendar appointments with timestamps and locations.
 - `list_mailboxes`: Enumerate accessible custom domain mailboxes and personal aliases.
 
+### Authorize a connection
+
+Open **API Keys**, give each agent its own connection name, and select the individual tools it needs. No tools are selected by default. Confirm the selection and copy the server-issued key into the client's `Authorization: Bearer …` header. Keys are shown only when issued; the server stores their hashes. Expiration is enforced.
+
+The MCP server requires this key for discovery and calls. `tools/list` exposes only the approved tools, and calls to any other tool are rejected. To add or remove tools, choose **Reauthorize tools**, review the selection, and confirm it. This replaces the credential: copy the new key into your agent. Agents cannot change their own permissions. Revoke unused connections from the same screen.
+
+Existing unscoped keys (including old locally generated keys) are not accepted. Create a new connection with explicit tool selections. Key metadata and permissions are stored in Cloudflare KV; changes and revocations may take time to propagate between regions. A previous key never receives the expanded permissions of its replacement.
+
+The authorization layer covers the existing six MCP tools. Some existing tool handlers still return placeholder results; authorization does not implement those tool operations.
+
 ### Configuration Snippets
 
 #### Claude Desktop (`claude_desktop_config.json`)
