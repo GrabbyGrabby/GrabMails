@@ -176,3 +176,18 @@ pnpm exec wrangler deploy
 
 ## License
 MIT &copy; GrabMails
+
+
+## Release versions
+
+| Version | Update | Source commit |
+| --- | --- | --- |
+| v1.0.0 | Baseline before this round of updates | `5489bb1` |
+| v1.1.0 | Stronger password requirements | `8488b97` |
+| v1.2.0 | Explicit MCP tool authorization | `bd3618e` |
+
+Once `.github/workflows/releases.yml` is merged into `main`, each new main-branch update creates the next minor version (`v1.3.0`, `v1.4.0`, …) and a GitHub Release with generated notes. The initial run also publishes any missing release pages for the historical tags above. The MCP update must be included in main before releasing subsequent versions. Tags identify exact source commits and are never moved or overwritten.
+
+Merge each logical update through a PR to keep its version and release notes clear. The release workflow runs independently of Cloudflare deployment: a source release is not proof of a successful deployment. It can be rerun manually after a publication failure; rerunning the same commit reuses its version. GitHub Actions needs permission to write repository contents. No additional deployment credentials are needed for releases.
+
+Validate release automation locally with `python3 -m unittest discover -s tests -p test_release.py`.
