@@ -121,7 +121,7 @@
             <p class="empty-desc">Create your first API key above to connect your AI tools and local environment.</p>
           </div>
 
-          <div v-else class="table-responsive">
+          <div v-else class="table-responsive desktop-keys-table">
             <table class="keys-table">
               <thead>
                 <tr>
@@ -158,6 +158,45 @@
               </tbody>
             </table>
           </div>
+
+          <!-- Mobile Cards Layout (Zero stretch, 100% accessible on phones) -->
+          <div v-if="!loading && keysList.length > 0" class="mobile-keys-cards">
+            <div v-for="k in keysList" :key="k.id" class="mobile-key-card">
+              <div class="mobile-key-top">
+                <div class="mobile-key-title-wrap">
+                  <Icon icon="hugeicons:key-01" width="16" height="16" class="mobile-key-icon" />
+                  <span class="mobile-key-title">{{ k.name }}</span>
+                </div>
+                <button class="revoke-btn" type="button" @click="revokeKey(k)">
+                  <Icon icon="hugeicons:delete-02" width="13" height="13" />
+                  <span>Revoke</span>
+                </button>
+              </div>
+
+              <div class="mobile-key-row">
+                <span class="mobile-key-label">Token Prefix</span>
+                <code class="key-prefix">{{ k.prefix || 'gmk_live_...' }}</code>
+              </div>
+
+              <div class="mobile-key-row scopes-row">
+                <span class="mobile-key-label">Scopes</span>
+                <div class="scopes-cluster">
+                  <span v-for="s in k.scopes" :key="s" class="scope-chip">{{ s }}</span>
+                </div>
+              </div>
+
+              <div class="mobile-key-meta-grid">
+                <div class="meta-col">
+                  <span class="meta-label">Created</span>
+                  <span class="meta-value">{{ k.createdAt }}</span>
+                </div>
+                <div class="meta-col">
+                  <span class="meta-label">Last Used</span>
+                  <span class="meta-value">{{ k.lastUsedAt || 'Never' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </el-scrollbar>
@@ -166,7 +205,7 @@
     <el-dialog
       v-model="showCreateModal"
       title="Create New API Key"
-      width="560px"
+      :width="isMobile ? '92vw' : '560px'"
       class="dark-dialog"
       :append-to-body="true"
     >
@@ -230,11 +269,18 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
+
+const isMobile = ref(false)
+function checkMobile() {
+  if (typeof window !== 'undefined') {
+    isMobile.value = window.innerWidth <= 768
+  }
+}
 
 const STORAGE_KEY = 'grabmails_user_api_keys'
 
@@ -292,7 +338,17 @@ const cursorMcpConfig = computed(() => {
 })
 
 onMounted(() => {
+  checkMobile()
+  if (typeof window !== 'undefined') {
+    window.addEventListener('resize', checkMobile)
+  }
   loadKeys()
+})
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', checkMobile)
+  }
 })
 
 async function loadKeys() {
@@ -963,5 +1019,236 @@ function copyKey(str) {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+/* Mobile Key Cards (hidden on desktop) */
+.mobile-keys-cards {
+  display: none;
+}
+
+.mobile-key-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobile-key-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mobile-key-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mobile-key-icon {
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.mobile-key-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-key-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+
+  &.scopes-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}
+
+.mobile-key-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mobile-key-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 11px;
+
+  .meta-col {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .meta-label {
+    color: #64748b;
+    font-size: 10.5px;
+    text-transform: uppercase;
+  }
+
+  .meta-value {
+    color: #cbd5e1;
+  }
+}
+
+/* ══ Comprehensive Mobile Responsive Styling ══ */
+@media (max-width: 768px) {
+  .api-keys-container {
+    padding: 16px 12px 100px;
+    gap: 16px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding-bottom: 16px;
+  }
+
+  .header-left {
+    align-items: flex-start;
+  }
+
+  .primary-action-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 11px 18px;
+  }
+
+  .new-key-banner {
+    padding: 16px 14px;
+  }
+
+  .secret-box {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .secret-code {
+    word-break: break-all;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .copy-secret-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 8px 14px;
+  }
+
+  .mcp-quickstart-card {
+    padding: 16px 14px;
+  }
+
+  .quickstart-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .quickstart-tabs {
+    width: 100%;
+    display: flex;
+  }
+
+  .tab-pill {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+    padding: 7px 10px;
+  }
+
+  .endpoint-row {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .endpoint-code {
+    word-break: break-all;
+    white-space: normal;
+    flex: 1;
+    min-width: 0;
+    font-size: 11.5px;
+    line-height: 1.4;
+  }
+
+  .snippet-block {
+    padding: 14px 14px 48px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .snippet-code {
+    font-size: 11.5px;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .copy-snippet-btn {
+    bottom: 10px;
+    right: 10px;
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+
+  .keys-table-card {
+    padding: 16px 12px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .desktop-keys-table {
+    display: none !important;
+  }
+
+  .mobile-keys-cards {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* Dialog Mobile Constraints */
+:deep(.el-dialog) {
+  max-width: min(560px, calc(100vw - 20px)) !important;
+  margin: 20px auto !important;
+  border-radius: 18px !important;
+  box-sizing: border-box !important;
+}
+
+:deep(.el-dialog__body) {
+  padding: 16px 18px !important;
+  max-height: 75vh;
+  overflow-y: auto;
 }
 </style>

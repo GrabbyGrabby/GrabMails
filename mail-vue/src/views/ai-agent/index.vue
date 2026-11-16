@@ -853,26 +853,75 @@ async function runMcpSelfTest() {
 </script>
 
 <style scoped>
+/* ══ Agent Workspace Theming Variables (Signature GrabMails 2-Color SaaS) ══ */
 .agent-workspace {
+  --agent-bg: var(--el-bg-color, #FAF8F5);
+  --agent-text: #09090b;
+  --agent-subtext: #64748b;
+  --agent-card-bg: #ffffff;
+  --agent-card-border: rgba(0, 0, 0, 0.08);
+  --agent-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  --agent-topbar-bg: rgba(255, 255, 255, 0.92);
+  --agent-input-bg: #ffffff;
+  --agent-input-border: rgba(0, 0, 0, 0.12);
+  --agent-primary-btn-bg: #000000;
+  --agent-primary-btn-text: #ffffff;
+  --agent-secondary-btn-bg: #ffffff;
+  --agent-secondary-btn-text: #09090b;
+  --agent-secondary-btn-border: rgba(0, 0, 0, 0.12);
+  --agent-user-bubble-bg: #000000;
+  --agent-user-bubble-text: #ffffff;
+  --agent-asst-bubble-bg: #ffffff;
+  --agent-asst-bubble-text: #18181b;
+  --agent-inner-panel-bg: #f8fafc;
+  --agent-inner-border: rgba(0, 0, 0, 0.06);
+
   display: flex;
   flex-direction: column;
   height: 100%;
   width: 100%;
-  background: var(--dark-bg, #070e10);
-  color: #fff;
+  background: var(--agent-bg);
+  color: var(--agent-text);
   overflow: hidden;
   font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* TOPBAR */
+/* ══ Dark Mode Overrides (Pure Pitch Black / Deep Graphite Contrast) ══ */
+:root.dark .agent-workspace,
+.dark .agent-workspace,
+[data-theme='dark'] .agent-workspace {
+  --agent-bg: #000000;
+  --agent-text: #ffffff;
+  --agent-subtext: #a1a1aa;
+  --agent-card-bg: #111317;
+  --agent-card-border: rgba(255, 255, 255, 0.08);
+  --agent-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --agent-topbar-bg: rgba(10, 10, 10, 0.92);
+  --agent-input-bg: #111317;
+  --agent-input-border: rgba(255, 255, 255, 0.12);
+  --agent-primary-btn-bg: #ffffff;
+  --agent-primary-btn-text: #000000;
+  --agent-secondary-btn-bg: rgba(255, 255, 255, 0.08);
+  --agent-secondary-btn-text: #ffffff;
+  --agent-secondary-btn-border: rgba(255, 255, 255, 0.16);
+  --agent-user-bubble-bg: #ffffff;
+  --agent-user-bubble-text: #000000;
+  --agent-asst-bubble-bg: #111317;
+  --agent-asst-bubble-text: #ffffff;
+  --agent-inner-panel-bg: rgba(0, 0, 0, 0.35);
+  --agent-inner-border: rgba(255, 255, 255, 0.06);
+}
+
+/* ══ TOPBAR ══ */
 .agent-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 16px 24px;
-  background: rgba(12, 20, 23, 0.85);
+  background: var(--agent-topbar-bg);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid var(--agent-card-border);
   flex-shrink: 0;
   gap: 16px;
   flex-wrap: wrap;
@@ -894,13 +943,13 @@ async function runMcpSelfTest() {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #ffffff;
+  background: var(--agent-primary-btn-bg);
+  border: 1px solid var(--agent-primary-btn-bg);
+  color: var(--agent-primary-btn-text);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
   flex-shrink: 0;
 }
 
@@ -915,13 +964,13 @@ async function runMcpSelfTest() {
   font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.02em;
-  color: #fff;
+  color: var(--agent-text);
 }
 
 .agent-subtitle {
   margin: 0;
   font-size: 12px;
-  color: var(--placeholder-color, #71717a);
+  color: var(--agent-subtext);
 }
 
 .mode-tabs {
@@ -929,8 +978,8 @@ async function runMcpSelfTest() {
   align-items: center;
   gap: 6px;
   padding: 4px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--agent-inner-panel-bg);
+  border: 1px solid var(--agent-card-border);
   border-radius: 14px;
 }
 
@@ -942,21 +991,21 @@ async function runMcpSelfTest() {
   border-radius: 10px;
   border: none;
   background: transparent;
-  color: #a1a1aa;
+  color: var(--agent-subtext);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    color: #fff;
+    color: var(--agent-text);
   }
 
   &.active {
-    background: #ffffff;
-    color: #000000;
+    background: var(--agent-primary-btn-bg);
+    color: var(--agent-primary-btn-text);
     font-weight: 600;
-    box-shadow: 0 2px 10px rgba(255, 255, 255, 0.15);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
   }
 }
 
@@ -964,11 +1013,11 @@ async function runMcpSelfTest() {
   font-size: 10px;
   padding: 2px 6px;
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(140, 140, 140, 0.15);
   font-weight: 600;
 }
 
-/* BODY */
+/* ══ BODY ══ */
 .agent-body {
   flex: 1;
   min-height: 0;
@@ -976,7 +1025,7 @@ async function runMcpSelfTest() {
   flex-direction: column;
 }
 
-/* COPILOT CONTAINER */
+/* ══ COPILOT WORKSPACE ══ */
 .copilot-container {
   display: flex;
   flex-direction: column;
@@ -1002,8 +1051,9 @@ async function runMcpSelfTest() {
 .copilot-welcome {
   padding: 28px 24px;
   border-radius: 24px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--agent-card-bg);
+  border: 1px solid var(--agent-card-border);
+  box-shadow: var(--agent-card-shadow);
   margin-bottom: 12px;
   text-align: center;
   display: flex;
@@ -1017,9 +1067,9 @@ async function runMcpSelfTest() {
   gap: 6px;
   padding: 4px 12px;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  color: #ffffff;
+  background: var(--agent-inner-panel-bg);
+  border: 1px solid var(--agent-card-border);
+  color: var(--agent-text);
   font-size: 11px;
   font-weight: 500;
   margin-bottom: 14px;
@@ -1030,13 +1080,13 @@ async function runMcpSelfTest() {
   font-size: 22px;
   font-weight: 600;
   letter-spacing: -0.02em;
-  color: #fff;
+  color: var(--agent-text);
 }
 
 .welcome-lead {
   margin: 0 0 24px 0;
   font-size: 13px;
-  color: #a1a1aa;
+  color: var(--agent-subtext);
   max-width: 580px;
   line-height: 1.5;
 }
@@ -1058,15 +1108,15 @@ async function runMcpSelfTest() {
   gap: 12px;
   padding: 14px 16px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--agent-card-bg);
+  border: 1px solid var(--agent-card-border);
+  box-shadow: var(--agent-card-shadow);
   cursor: pointer;
   text-align: left;
   transition: all 0.2s ease;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.25);
+    border-color: rgba(140, 140, 140, 0.35);
     transform: translateY(-1px);
   }
 }
@@ -1080,10 +1130,10 @@ async function runMcpSelfTest() {
   justify-content: center;
   flex-shrink: 0;
 
-  &.amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-  &.emerald { background: rgba(255, 255, 255, 0.08); color: #ffffff; }
-  &.violet { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
-  &.cyan { background: rgba(6, 182, 212, 0.15); color: #38bdf8; }
+  &.amber { background: rgba(245, 158, 11, 0.15); color: #d97706; }
+  &.emerald { background: rgba(140, 140, 140, 0.12); color: var(--agent-text); }
+  &.violet { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+  &.cyan { background: rgba(6, 182, 212, 0.15); color: #0284c7; }
 }
 
 .quick-info {
@@ -1096,18 +1146,18 @@ async function runMcpSelfTest() {
 .quick-title {
   font-size: 13px;
   font-weight: 600;
-  color: #fff;
+  color: var(--agent-text);
 }
 
 .quick-sub {
   font-size: 11px;
-  color: #71717a;
+  color: var(--agent-subtext);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* Messages */
+/* ══ MESSAGES ══ */
 .message-row {
   display: flex;
   gap: 12px;
@@ -1117,8 +1167,23 @@ async function runMcpSelfTest() {
     flex-direction: row-reverse;
 
     .message-bubble {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: var(--agent-user-bubble-bg) !important;
+      border: 1px solid var(--agent-user-bubble-bg) !important;
+      color: var(--agent-user-bubble-text) !important;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+
+      .bubble-author {
+        color: var(--agent-user-bubble-text) !important;
+      }
+
+      .bubble-time {
+        color: var(--agent-user-bubble-text) !important;
+        opacity: 0.7;
+      }
+
+      .bubble-content {
+        color: var(--agent-user-bubble-text) !important;
+      }
     }
   }
 }
@@ -1127,27 +1192,29 @@ async function runMcpSelfTest() {
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--agent-primary-btn-bg);
+  border: 1px solid var(--agent-primary-btn-bg);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: #ffffff;
+  color: var(--agent-primary-btn-text);
 }
 
 .user-avatar-initial {
   font-size: 13px;
   font-weight: 600;
-  color: #fff;
+  color: inherit;
 }
 
 .message-bubble {
   max-width: 80%;
   padding: 14px 18px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: var(--agent-asst-bubble-bg);
+  border: 1px solid var(--agent-card-border);
+  color: var(--agent-asst-bubble-text);
+  box-shadow: var(--agent-card-shadow);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1163,26 +1230,26 @@ async function runMcpSelfTest() {
 .bubble-author {
   font-size: 12px;
   font-weight: 600;
-  color: #e4e4e7;
+  color: var(--agent-text);
 }
 
 .bubble-time {
   font-size: 10px;
-  color: #71717a;
+  color: var(--agent-subtext);
 }
 
 .bubble-content {
   font-size: 13.5px;
   line-height: 1.6;
-  color: #e4e4e7;
+  color: inherit;
 }
 
-/* Tool Execution: Search Results */
+/* ══ TOOL EXECUTION CARDS ══ */
 .tool-results-panel {
   margin-top: 10px;
   border-radius: 14px;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--agent-inner-panel-bg);
+  border: 1px solid var(--agent-card-border);
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -1195,7 +1262,7 @@ async function runMcpSelfTest() {
   gap: 6px;
   font-size: 12px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--agent-text);
 }
 
 .tool-search-items {
@@ -1207,8 +1274,8 @@ async function runMcpSelfTest() {
 .tool-email-item {
   padding: 10px 12px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--agent-card-bg);
+  border: 1px solid var(--agent-card-border);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1223,23 +1290,23 @@ async function runMcpSelfTest() {
 .email-sender {
   font-size: 12px;
   font-weight: 600;
-  color: #fff;
+  color: var(--agent-text);
 }
 
 .email-date {
   font-size: 11px;
-  color: #71717a;
+  color: var(--agent-subtext);
 }
 
 .email-subject {
   font-size: 13px;
   font-weight: 500;
-  color: #e4e4e7;
+  color: var(--agent-text);
 }
 
 .email-snippet {
   font-size: 11.5px;
-  color: #a1a1aa;
+  color: var(--agent-subtext);
 }
 
 .email-actions {
@@ -1253,29 +1320,26 @@ async function runMcpSelfTest() {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 10px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
-  color: #e4e4e7;
-  font-size: 11px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--agent-card-border);
+  background: var(--agent-card-bg);
+  color: var(--agent-text);
+  font-size: 11.5px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
+    transform: translateY(-1px);
+    border-color: rgba(140, 140, 140, 0.35);
   }
 
   &.primary {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.35);
-    color: #ffffff;
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.25);
-    }
+    background: var(--agent-primary-btn-bg);
+    border-color: var(--agent-primary-btn-bg);
+    color: var(--agent-primary-btn-text);
+    font-weight: 600;
   }
 }
 
@@ -1283,8 +1347,8 @@ async function runMcpSelfTest() {
 .tool-draft-card {
   margin-top: 10px;
   border-radius: 14px;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--agent-inner-panel-bg);
+  border: 1px solid var(--agent-card-border);
   padding: 14px;
   display: flex;
   flex-direction: column;
@@ -1301,30 +1365,30 @@ async function runMcpSelfTest() {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--agent-text);
 }
 
 .draft-target {
   font-size: 11px;
-  color: #a1a1aa;
+  color: var(--agent-subtext);
 }
 
 .draft-card-subject {
   font-size: 13px;
-  color: #fff;
+  color: var(--agent-text);
 }
 
 .draft-card-body {
   font-size: 12.5px;
   line-height: 1.6;
-  color: #d4d4d8;
+  color: var(--agent-text);
   white-space: pre-wrap;
-  padding: 10px;
-  background: rgba(255, 255, 255, 0.02);
+  padding: 10px 12px;
+  background: var(--agent-card-bg);
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--agent-card-border);
 }
 
 .draft-card-footer {
@@ -1339,16 +1403,17 @@ async function runMcpSelfTest() {
   gap: 6px;
   padding: 6px 14px;
   border-radius: 8px;
-  border: none;
-  background: #ffffff;
-  color: #000000;
+  border: 1px solid var(--agent-primary-btn-bg);
+  background: var(--agent-primary-btn-bg);
+  color: var(--agent-primary-btn-text);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
 
   &:hover {
-    background: #e4e4e7;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 }
 
@@ -1358,14 +1423,14 @@ async function runMcpSelfTest() {
   gap: 5px;
   padding: 6px 12px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
-  color: #e4e4e7;
+  border: 1px solid var(--agent-card-border);
+  background: var(--agent-card-bg);
+  color: var(--agent-text);
   font-size: 12px;
   cursor: pointer;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(140, 140, 140, 0.35);
   }
 }
 
@@ -1373,7 +1438,7 @@ async function runMcpSelfTest() {
 .tool-calendar-card {
   margin-top: 10px;
   border-radius: 14px;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--agent-inner-panel-bg);
   border: 1px solid rgba(139, 92, 246, 0.25);
   padding: 12px;
   display: flex;
@@ -1387,7 +1452,7 @@ async function runMcpSelfTest() {
   gap: 6px;
   font-size: 12px;
   font-weight: 600;
-  color: #a78bfa;
+  color: #8b5cf6;
 }
 
 .cal-events-list {
@@ -1402,7 +1467,8 @@ async function runMcpSelfTest() {
   gap: 10px;
   padding: 8px 10px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--agent-card-bg);
+  border: 1px solid var(--agent-card-border);
 }
 
 .cal-event-dot {
@@ -1421,12 +1487,12 @@ async function runMcpSelfTest() {
 .cal-event-title {
   font-size: 12.5px;
   font-weight: 500;
-  color: #fff;
+  color: var(--agent-text);
 }
 
 .cal-event-time {
   font-size: 11px;
-  color: #a1a1aa;
+  color: var(--agent-subtext);
 }
 
 .cal-card-footer {
@@ -1440,15 +1506,20 @@ async function runMcpSelfTest() {
   padding: 5px 12px;
   border-radius: 8px;
   border: 1px solid rgba(139, 92, 246, 0.35);
-  background: rgba(139, 92, 246, 0.15);
-  color: #c4b5fd;
+  background: rgba(139, 92, 246, 0.12);
+  color: #7c3aed;
   font-size: 11.5px;
   font-weight: 500;
   cursor: pointer;
 
   &:hover {
-    background: rgba(139, 92, 246, 0.25);
+    background: rgba(139, 92, 246, 0.2);
   }
+}
+
+:root.dark .cal-view-btn,
+.dark .cal-view-btn {
+  color: #c4b5fd;
 }
 
 /* Typing */
@@ -1463,7 +1534,7 @@ async function runMcpSelfTest() {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--agent-text);
   animation: typing 1.4s infinite ease-in-out both;
 
   &:nth-child(1) { animation-delay: -0.32s; }
@@ -1475,12 +1546,12 @@ async function runMcpSelfTest() {
   40% { transform: scale(1); opacity: 1; }
 }
 
-/* Input Bar */
+/* ══ INPUT BAR ══ */
 .copilot-input-bar {
   padding: 16px 24px;
-  background: rgba(12, 20, 23, 0.95);
+  background: var(--agent-topbar-bg);
   backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  border-top: 1px solid var(--agent-card-border);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1493,15 +1564,15 @@ async function runMcpSelfTest() {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--agent-input-bg);
+  border: 1px solid var(--agent-input-border);
   border-radius: 16px;
   padding: 8px 12px 8px 16px;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
   &:focus-within {
-    border-color: rgba(255, 255, 255, 0.4);
-    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--agent-text);
+    box-shadow: 0 0 0 1px var(--agent-text);
   }
 }
 
@@ -1510,14 +1581,14 @@ async function runMcpSelfTest() {
   background: transparent;
   border: none;
   outline: none;
-  color: #fff;
+  color: var(--agent-text);
   font-family: inherit;
   font-size: 13.5px;
   resize: none;
   max-height: 120px;
 
   &::placeholder {
-    color: #71717a;
+    color: var(--agent-subtext);
   }
 }
 
@@ -1527,16 +1598,17 @@ async function runMcpSelfTest() {
   gap: 6px;
   padding: 8px 16px;
   border-radius: 10px;
-  border: none;
-  background: #ffffff;
-  color: #000000;
+  border: 1px solid var(--agent-primary-btn-bg);
+  background: var(--agent-primary-btn-bg);
+  color: var(--agent-primary-btn-text);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
 
   &:hover:not(:disabled) {
-    background: #e4e4e7;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
   &:disabled {
@@ -1553,15 +1625,15 @@ async function runMcpSelfTest() {
   align-items: center;
   justify-content: space-between;
   font-size: 11px;
-  color: #71717a;
+  color: var(--agent-subtext);
 }
 
 .model-badge {
-  color: #ffffff;
+  color: var(--agent-text);
   font-weight: 500;
 }
 
-/* MCP CONTAINER */
+/* ══ MCP CONTAINER ══ */
 .mcp-container {
   height: 100%;
 }
@@ -1578,8 +1650,9 @@ async function runMcpSelfTest() {
 .mcp-hero-card {
   padding: 24px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--agent-card-bg);
+  border: 1px solid var(--agent-card-border);
+  box-shadow: var(--agent-card-shadow);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1592,8 +1665,9 @@ async function runMcpSelfTest() {
   align-self: flex-start;
   padding: 4px 10px;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+  background: var(--agent-inner-panel-bg);
+  border: 1px solid var(--agent-card-border);
+  color: var(--agent-text);
   font-size: 11px;
   font-weight: 600;
 }
@@ -1602,22 +1676,22 @@ async function runMcpSelfTest() {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
-  color: #fff;
+  color: var(--agent-text);
 }
 
 .mcp-hero-desc {
   margin: 0;
   font-size: 13px;
   line-height: 1.55;
-  color: #a1a1aa;
+  color: var(--agent-subtext);
 }
 
 .mcp-endpoint-box {
   margin-top: 8px;
   padding: 12px 16px;
   border-radius: 12px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--agent-inner-panel-bg);
+  border: 1px solid var(--agent-card-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1628,7 +1702,7 @@ async function runMcpSelfTest() {
 .endpoint-label {
   font-size: 11.5px;
   font-weight: 600;
-  color: #71717a;
+  color: var(--agent-subtext);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -1640,8 +1714,9 @@ async function runMcpSelfTest() {
 
   code {
     font-size: 13px;
-    color: #ffffff;
-    font-family: monospace;
+    color: var(--agent-text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    word-break: break-all;
   }
 }
 
@@ -1649,17 +1724,19 @@ async function runMcpSelfTest() {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 10px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-  font-size: 11px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--agent-secondary-btn-border);
+  background: var(--agent-secondary-btn-bg);
+  color: var(--agent-secondary-btn-text);
+  font-size: 11.5px;
   font-weight: 500;
   cursor: pointer;
+  transition: all 0.15s ease;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(140, 140, 140, 0.4);
+    transform: translateY(-1px);
   }
 }
 
@@ -1674,12 +1751,12 @@ async function runMcpSelfTest() {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: #fff;
+  color: var(--agent-text);
 }
 
 .mcp-section-sub {
   font-size: 12.5px;
-  color: #71717a;
+  color: var(--agent-subtext);
 }
 
 .client-tabs {
@@ -1694,31 +1771,32 @@ async function runMcpSelfTest() {
   gap: 6px;
   padding: 8px 14px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-  color: #a1a1aa;
+  border: 1px solid var(--agent-card-border);
+  background: var(--agent-card-bg);
+  color: var(--agent-subtext);
   font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.18s ease;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: #fff;
+    color: var(--agent-text);
+    border-color: rgba(140, 140, 140, 0.35);
   }
 
   &.active {
-    background: #ffffff;
-    border-color: #ffffff;
-    color: #000000;
+    background: var(--agent-primary-btn-bg);
+    border-color: var(--agent-primary-btn-bg);
+    color: var(--agent-primary-btn-text);
     font-weight: 600;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
   }
 }
 
 .code-box {
   border-radius: 14px;
-  background: #030708;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #090a0d;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   overflow: hidden;
 }
 
@@ -1727,14 +1805,14 @@ async function runMcpSelfTest() {
   align-items: center;
   justify-content: space-between;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .code-file {
   font-size: 11px;
   font-family: monospace;
-  color: #71717a;
+  color: #94a3b8;
 }
 
 .code-copy-btn {
@@ -1743,14 +1821,15 @@ async function runMcpSelfTest() {
   gap: 5px;
   padding: 4px 10px;
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
   font-size: 11px;
   cursor: pointer;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: #ffffff;
+    color: #000000;
   }
 }
 
@@ -1784,8 +1863,9 @@ async function runMcpSelfTest() {
 .tool-card {
   padding: 14px 16px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--agent-card-bg);
+  border: 1px solid var(--agent-card-border);
+  box-shadow: var(--agent-card-shadow);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1801,21 +1881,22 @@ async function runMcpSelfTest() {
   font-size: 13px;
   font-family: monospace;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--agent-text);
 }
 
 .tool-scope-badge {
   font-size: 10px;
   padding: 2px 6px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #a1a1aa;
+  background: var(--agent-inner-panel-bg);
+  border: 1px solid var(--agent-card-border);
+  color: var(--agent-subtext);
 }
 
 .tool-desc {
   margin: 0;
   font-size: 12px;
-  color: #a1a1aa;
+  color: var(--agent-subtext);
   line-height: 1.45;
 }
 
@@ -1826,24 +1907,29 @@ async function runMcpSelfTest() {
   font-size: 10.5px;
 
   .args-label {
-    color: #71717a;
+    color: var(--agent-subtext);
     text-transform: uppercase;
     font-weight: 600;
   }
 
   code {
-    color: #93c5fd;
+    color: #2563eb;
     font-family: monospace;
     word-break: break-all;
   }
+}
+
+:root.dark .tool-args code,
+.dark .tool-args code {
+  color: #93c5fd;
 }
 
 /* Test Runner */
 .mcp-test-runner {
   padding: 18px 20px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: var(--agent-card-bg);
+  border: 1px solid var(--agent-card-border);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1861,13 +1947,13 @@ async function runMcpSelfTest() {
   margin: 0 0 2px 0;
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
+  color: var(--agent-text);
 }
 
 .test-sub {
   margin: 0;
   font-size: 11.5px;
-  color: #71717a;
+  color: var(--agent-subtext);
 }
 
 .test-run-btn {
@@ -1876,24 +1962,25 @@ async function runMcpSelfTest() {
   gap: 6px;
   padding: 7px 14px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+  border: 1px solid var(--agent-primary-btn-bg);
+  background: var(--agent-primary-btn-bg);
+  color: var(--agent-primary-btn-text);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 }
 
 .test-output-box {
   padding: 12px 14px;
   border-radius: 10px;
-  background: #020506;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: #090a0d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 
   pre {
     margin: 0;
@@ -1915,7 +2002,8 @@ async function runMcpSelfTest() {
   padding: 14px 18px;
   background: #000000;
   border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 12px;
+  border-radius: 14px;
+  color: #ffffff;
 }
 
 .api-key-banner-left {
@@ -1941,11 +2029,119 @@ async function runMcpSelfTest() {
   font-weight: 600;
   cursor: pointer;
   transition: all 150ms ease;
+
+  &:hover {
+    background: #f4f4f5;
+    color: #000000;
+    transform: translateY(-1px);
+  }
 }
 
-.get-api-key-btn:hover {
-  background: #f4f4f5;
-  color: #000000;
-  transform: translateY(-1px);
+/* ══ Full Mobile Responsiveness for AI Agent ══ */
+@media (max-width: 768px) {
+  .agent-topbar {
+    padding: 12px 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .topbar-left {
+    justify-content: flex-start;
+  }
+
+  .mode-tabs {
+    width: 100%;
+    display: flex;
+  }
+
+  .mode-tab {
+    flex: 1;
+    justify-content: center;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .chat-scroll {
+    padding: 12px;
+  }
+
+  .copilot-welcome {
+    padding: 20px 14px;
+    border-radius: 18px;
+  }
+
+  .welcome-heading {
+    font-size: 18px;
+  }
+
+  .quick-prompts-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .message-bubble {
+    max-width: 90%;
+    padding: 12px 14px;
+  }
+
+  .copilot-input-bar {
+    padding: 12px 12px 90px;
+  }
+
+  .input-container {
+    padding: 6px 10px 6px 12px;
+    border-radius: 14px;
+  }
+
+  .mcp-content {
+    padding: 14px;
+    gap: 20px;
+  }
+
+  .mcp-hero-card {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .mcp-endpoint-box {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .endpoint-value {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .endpoint-value code {
+    word-break: break-all;
+    font-size: 12px;
+  }
+
+  .copy-endpoint-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 8px 12px;
+  }
+
+  .mcp-api-key-banner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .get-api-key-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 16px;
+  }
+
+  .tools-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
