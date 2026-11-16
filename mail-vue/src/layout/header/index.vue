@@ -12,7 +12,7 @@
         @click="openSend"
       >
         <el-icon :size="21">
-          <Icon icon="material-symbols:edit-outline-sharp"/>
+          <Icon icon="hugeicons:edit-04"/>
         </el-icon>
       </el-button>
     </div>
@@ -33,6 +33,7 @@
       @reset="returnToList('send')"
     />
     <div class="toolbar">
+      <apps-menu class="mr-2" />
       <el-dropdown
         ref="userDropdownRef"
         trigger="click"
@@ -57,7 +58,7 @@
               </div>
               <div class="detail-email" @click="copyEmail(userStore.user.email)" :title="userStore.user.email">
                 <span>{{ userStore.user.email }}</span>
-                <Icon icon="solar:copy-linear" width="13" height="13" class="copy-hint-icon" />
+                <Icon icon="hugeicons:copy" width="13" height="13" class="copy-hint-icon" />
               </div>
               <div class="detail-user-type">
                 <span class="modern-role-badge">{{ userStore.user.role?.name }}</span>
@@ -100,6 +101,7 @@
 
 <script setup>
 import router from "@/router";
+import AppsMenu from '@/components/apps-menu/index.vue'
 import hanburger from '@/components/hamburger/index.vue'
 import {logout} from "@/request/login.js";
 import {Icon} from "@iconify/vue";
@@ -116,7 +118,7 @@ import {useEmailStore} from '@/store/email.js'
 import {useSendStore} from '@/store/send.js'
 import EyeTrackerVue from "@/components/EyeTrackerVue.vue";
 
-const {t} = useI18n();
+const {t, locale} = useI18n();
 const route = useRoute();
 const settingStore = useSettingStore();
 const userStore = useUserStore();
@@ -248,6 +250,11 @@ function changeAside() {
   uiStore.asideShow = !uiStore.asideShow
 }
 
+function goToSettings() {
+  userDropdownRef.value?.handleClose?.();
+  router.push('/settings');
+}
+
 function clickLogout() {
   logoutLoading.value = true
   logout().then(() => {
@@ -305,7 +312,7 @@ onBeforeUnmount(() => {
   width: min(304px, calc(100vw - 24px)) !important;
   height: min(304px, calc(100vw - 24px)) !important;
   background: #ffffff !important;
-  color: #051F20 !important;
+  color: #000000 !important;
   border-radius: 28px !important;
   border: 1px solid rgba(0, 0, 0, 0.08) !important;
   box-shadow: 0 20px 48px -10px rgba(0, 0, 0, 0.16), 0 4px 16px rgba(0, 0, 0, 0.06) !important;

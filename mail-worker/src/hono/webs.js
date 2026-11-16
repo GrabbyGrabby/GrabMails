@@ -24,5 +24,7 @@ import '../api/privacy-sec-api';
 import '../api/unsubscribe-api';
 import '../api/track-api';
 import '../api/ai-api';
+import '../api/mcp-api';
+import '../api/admin-api';
 
 export default app;

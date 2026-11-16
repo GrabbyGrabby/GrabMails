@@ -492,6 +492,51 @@ html:not(.dark) .floating-dock-bar .gdock-dot,
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
 
+@media (max-width: 767px) {
+  .floating-dock-bar .gdock {
+    padding: 6px 14px !important;
+    gap: 12px !important;
+  }
+  .floating-dock-bar .gdock-item {
+    width: 40px !important;
+    height: 40px !important;
+  }
+  .floating-dock-bar .gdock-glyph svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .floating-dock-bar .gdock {
+    padding: 5px 10px !important;
+    gap: 8px !important;
+  }
+  .floating-dock-bar .gdock-item {
+    width: 36px !important;
+    height: 36px !important;
+  }
+  .floating-dock-bar .gdock-glyph svg {
+    width: 17px !important;
+    height: 17px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .floating-dock-bar .gdock {
+    padding: 4px 8px !important;
+    gap: 4px !important;
+  }
+  .floating-dock-bar .gdock-item {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  .floating-dock-bar .gdock-glyph svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+}
+
 .gdock-item {
   position: relative;
   width: 44px; height: 44px;

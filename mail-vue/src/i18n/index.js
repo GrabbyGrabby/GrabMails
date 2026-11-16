@@ -1,12 +1,17 @@
 import { createI18n } from 'vue-i18n';
-import en from './en.js'
-import zh from './zh.js'
+import en from './en.js';
+import zh from './zh.js';
+import { SUPPORTED_LOCALES, loadLocaleMessages, isRtl } from './locales.js';
+
 const i18n = createI18n({
     legacy: false,
+    locale: 'en',
+    fallbackLocale: 'en',
     messages: {
         zh,
         en
     },
 });
 
+export { SUPPORTED_LOCALES, loadLocaleMessages, isRtl };
 export default i18n;

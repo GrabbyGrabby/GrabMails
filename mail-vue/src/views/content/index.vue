@@ -1,20 +1,79 @@
 <template>
   <div class="box">
     <div class="header-actions">
-      <Icon class="icon" icon="material-symbols-light:arrow-back-ios-new" width="20" height="20" @click="handleBack"/>
-      <Icon v-perm="'email:delete'" class="icon" icon="uiw:delete" width="16" height="16" @click="handleDelete"/>
+      <Icon class="icon" icon="hugeicons:chevron-left" width="20" height="20" @click="handleBack"/>
+      <Icon v-perm="'email:delete'" class="icon" icon="hugeicons:delete-02" width="18" height="18" @click="handleDelete"/>
       <span class="star" v-if="emailStore.contentData.showStar">
         <Icon class="icon" @click="changeStar" v-if="email.isStar" icon="fluent-color:star-16" width="20" height="20"/>
-        <Icon class="icon" @click="changeStar" v-else icon="solar:star-line-duotone" width="18.5" height="18.5"/>
+        <Icon class="icon" @click="changeStar" v-else icon="hugeicons:star" width="18.5" height="18.5"/>
       </span>
-      <Icon class="icon" v-if="emailStore.contentData.showReply" v-perm="'email:send'"  @click="openReply" icon="fluent-mdl2:reply" width="19" height="19" />
-      <Icon class="icon" v-if="emailStore.contentData.showReply" v-perm="'email:send'"  @click="openForward" icon="iconoir:arrow-up-right" width="20" height="20" />
+      <Icon class="icon" v-if="emailStore.contentData.showReply" v-perm="'email:send'"  @click="openReply" icon="hugeicons:reply" width="19" height="19" />
+      <Icon class="icon" v-if="emailStore.contentData.showReply" v-perm="'email:send'"  @click="openForward" icon="hugeicons:reply-all" width="20" height="20" />
+
+      <!-- Mailflare Feature: Snooze Email -->
+      <el-dropdown trigger="click" @command="handleSnoozeCommand">
+        <span class="icon-wrap" title="Snooze email">
+          <Icon class="icon" icon="hugeicons:clock-01" width="18.5" height="18.5" />
+        </span>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item disabled style="font-weight: 600; font-size: 11px;">SNOOZE EMAIL</el-dropdown-item>
+            <el-dropdown-item command="later-today">Later Today (6:00 PM)</el-dropdown-item>
+            <el-dropdown-item command="tomorrow-morning">Tomorrow Morning (8:00 AM)</el-dropdown-item>
+            <el-dropdown-item command="this-weekend">This Weekend (Sat 9:00 AM)</el-dropdown-item>
+            <el-dropdown-item command="next-week">Next Week (Mon 8:00 AM)</el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
+
+      <!-- Mailflare Feature: Print Clean View -->
+      <Icon class="icon" icon="hugeicons:printer" width="19" height="19" title="Print email" @click="handlePrintEmail" />
+
+      <!-- Mailflare Feature: Private Thread Note -->
+      <Icon
+        class="icon"
+        :class="{ 'has-note': hasPrivateNote }"
+        icon="hugeicons:note-01"
+        width="18.5"
+        height="18.5"
+        title="Add or view private note"
+        @click="showNoteEditor = !showNoteEditor"
+      />
     </div>
     <div></div>
     <el-scrollbar class="scrollbar">
       <div class="container">
         <div class="email-title">
           {{ email.subject }}
+        </div>
+
+        <!-- Mailflare Feature: 1-Click Unsubscribe Banner -->
+        <div v-if="detectedUnsubscribeUrl" class="mf-unsub-banner">
+          <div class="mf-unsub-info">
+            <Icon icon="hugeicons:mail" width="15" height="15" />
+            <span>This is a newsletter or mailing list message.</span>
+          </div>
+          <a :href="detectedUnsubscribeUrl" target="_blank" rel="noopener noreferrer" class="mf-unsub-link">
+            Unsubscribe
+          </a>
+        </div>
+
+        <!-- Mailflare Feature: Private Thread Note Card -->
+        <div v-if="showNoteEditor || currentNoteText" class="mf-note-card">
+          <div class="mf-note-top">
+            <div class="mf-note-label">
+              <Icon icon="hugeicons:note-01" width="14" height="14" />
+              <span>Private Thread Note (only visible to you)</span>
+            </div>
+            <button type="button" class="mf-note-close-btn" @click="showNoteEditor = false">✕</button>
+          </div>
+          <textarea
+            v-model="currentNoteText"
+            rows="2"
+            class="mf-note-textarea"
+            placeholder="Write a private note about this email, deal, or client..."
+            @input="savePrivateNote"
+          />
         </div>
         <div class="content">
           <div class="email-info">
@@ -63,7 +122,7 @@
                 <div class="opt-icon att-icon">
                   <Icon v-if="isImage(att.filename)" icon="hugeicons:view" width="22" height="22" @click="showImage(att.key)"/>
                   <a :href="cvtR2Url(att.key)" download>
-                    <Icon icon="system-uicons:push-down" width="22" height="22"/>
+                    <Icon icon="hugeicons:download" width="20" height="20"/>
                   </a>
                 </div>
               </div>
@@ -268,6 +327,127 @@ function formateReceive(recipient) {
     return String(recipient)
   }
 }
+
+// ── Mailflare Feature: 1-Click Smart Unsubscribe Banner ──
+const detectedUnsubscribeUrl = computed(() => {
+  const content = email.value.content || email.value.text || ''
+  if (!content) return null
+  const hrefMatch = content.match(/href=["'](https?:\/\/[^"']*(?:unsubscribe|optout|opt-out|preferences|list-manage)[^"']*)["']/i)
+  if (hrefMatch && hrefMatch[1]) {
+    return hrefMatch[1]
+  }
+  return null
+})
+
+// ── Mailflare Feature: Print Clean View ──
+function handlePrintEmail() {
+  const em = email.value
+  const printWindow = window.open('', '_blank', 'width=800,height=700')
+  if (!printWindow) {
+    ElMessage.warning('Popup blocker prevented print window from opening')
+    return
+  }
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${em.subject || 'Print Email'} - GrabMails</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 36px; color: #111; line-height: 1.5; }
+    .header { border-bottom: 2px solid #e5e7eb; padding-bottom: 16px; margin-bottom: 24px; }
+    .subject { font-size: 22px; font-weight: 700; margin: 0 0 14px 0; color: #111827; }
+    .meta-row { font-size: 13px; color: #4b5563; margin: 4px 0; }
+    .meta-label { font-weight: 600; color: #111827; display: inline-block; width: 68px; }
+    .body { font-size: 14px; line-height: 1.6; color: #1f2937; margin-top: 20px; }
+    .footer { margin-top: 40px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #9ca3af; }
+    @media print { body { padding: 0; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="subject">${em.subject || '(No Subject)'}</div>
+    <div class="meta-row"><span class="meta-label">From:</span> ${em.name || ''} &lt;${em.sendEmail || ''}&gt;</div>
+    <div class="meta-row"><span class="meta-label">To:</span> ${formateReceive(em.recipient)}</div>
+    <div class="meta-row"><span class="meta-label">Date:</span> ${formatDetailDate(em.createTime)}</div>
+  </div>
+  <div class="body">
+    ${formatImage(em.content) || `<pre style="white-space: pre-wrap; font-family: inherit;">${em.text || ''}</pre>`}
+  </div>
+  <div class="footer">Printed from GrabMails Cloud Email</div>
+</body>
+</html>`
+  printWindow.document.write(html)
+  printWindow.document.close()
+  printWindow.focus()
+  setTimeout(() => {
+    printWindow.print()
+    printWindow.close()
+  }, 250)
+}
+
+// ── Mailflare Feature: Snooze Email ──
+function handleSnoozeCommand(cmd) {
+  let snoozedUntil = new Date()
+  if (cmd === 'later-today') {
+    snoozedUntil.setHours(18, 0, 0, 0)
+  } else if (cmd === 'tomorrow-morning') {
+    snoozedUntil.setDate(snoozedUntil.getDate() + 1)
+    snoozedUntil.setHours(8, 0, 0, 0)
+  } else if (cmd === 'this-weekend') {
+    const day = snoozedUntil.getDay()
+    const diff = (6 - day) % 7 || 7
+    snoozedUntil.setDate(snoozedUntil.getDate() + diff)
+    snoozedUntil.setHours(9, 0, 0, 0)
+  } else if (cmd === 'next-week') {
+    const day = snoozedUntil.getDay()
+    const diff = (8 - day) % 7 || 7
+    snoozedUntil.setDate(snoozedUntil.getDate() + diff)
+    snoozedUntil.setHours(8, 0, 0, 0)
+  }
+  try {
+    const snoozed = JSON.parse(localStorage.getItem('grabmails_snoozed_emails') || '{}')
+    snoozed[email.value.emailId] = snoozedUntil.toISOString()
+    localStorage.setItem('grabmails_snoozed_emails', JSON.stringify(snoozed))
+    ElMessage.success(`Email snoozed until ${snoozedUntil.toLocaleDateString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' })}`)
+    handleBack()
+  } catch (e) {}
+}
+
+// ── Mailflare Feature: Private Thread Notes ──
+const showNoteEditor = ref(false)
+const currentNoteText = ref('')
+const hasPrivateNote = computed(() => !!currentNoteText.value.trim())
+
+function loadPrivateNote(emailId) {
+  if (!emailId) {
+    currentNoteText.value = ''
+    return
+  }
+  try {
+    const notes = JSON.parse(localStorage.getItem('grabmails_email_notes') || '{}')
+    currentNoteText.value = notes[emailId] || ''
+  } catch (e) {
+    currentNoteText.value = ''
+  }
+}
+
+function savePrivateNote() {
+  const emailId = email.value.emailId
+  if (!emailId) return
+  try {
+    const notes = JSON.parse(localStorage.getItem('grabmails_email_notes') || '{}')
+    if (currentNoteText.value.trim()) {
+      notes[emailId] = currentNoteText.value.trim()
+    } else {
+      delete notes[emailId]
+    }
+    localStorage.setItem('grabmails_email_notes', JSON.stringify(notes))
+  } catch (e) {}
+}
+
+watch(() => email.value.emailId, (id) => {
+  loadPrivateNote(id)
+}, { immediate: true })
 
 function changeStar() {
   if (email.value.isStar) {
@@ -558,5 +738,124 @@ const handleDelete = () => {
   margin-bottom: 30px;
 }
 
+.has-note {
+  color: #f59e0b !important;
+}
 
+.icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.mf-unsub-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #1e40af;
+
+  .mf-unsub-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mf-unsub-link {
+    color: #2563eb;
+    font-weight: 500;
+    text-decoration: underline;
+    font-size: 12.5px;
+    white-space: nowrap;
+
+    &:hover {
+      color: #1d4ed8;
+    }
+  }
+}
+
+:root.dark .mf-unsub-banner,
+.dark .mf-unsub-banner {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #93c5fd;
+
+  .mf-unsub-link {
+    color: #60a5fa;
+  }
+}
+
+.mf-note-card {
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  .mf-note-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 500;
+    color: #b45309;
+
+    .mf-note-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mf-note-close-btn {
+      border: none;
+      background: transparent;
+      color: #b45309;
+      cursor: pointer;
+      font-size: 12px;
+    }
+  }
+
+  .mf-note-textarea {
+    width: 100%;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 6px;
+    background: #ffffff;
+    padding: 6px 10px;
+    font-size: 13px;
+    color: #1f2937;
+    outline: none;
+    resize: vertical;
+    font-family: inherit;
+
+    &:focus {
+      border-color: #f59e0b;
+    }
+  }
+}
+
+:root.dark .mf-note-card,
+.dark .mf-note-card {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+
+  .mf-note-top {
+    color: #fbbf24;
+    .mf-note-close-btn { color: #fbbf24; }
+  }
+
+  .mf-note-textarea {
+    background: #1f2228;
+    color: #f3f4f6;
+    border-color: rgba(245, 158, 11, 0.4);
+  }
+}
 </style>

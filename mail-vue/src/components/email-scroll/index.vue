@@ -11,11 +11,11 @@
       <div class="header-left" :style="'padding-left:' + actionLeft">
 
         <slot name="first"></slot>
-        <Icon class="icon reload" icon="ion:reload" width="18" height="18" @click="refresh"/>
-        <Icon v-perm="'email:delete'" class="icon delete" icon="uiw:delete" width="16" height="16"
+        <Icon class="icon reload" icon="hugeicons:refresh-cw" width="18" height="18" @click="refresh"/>
+        <Icon v-perm="'email:delete'" class="icon delete" icon="hugeicons:delete-02" width="18" height="18"
               v-if="getSelectedMailsIds().length > 0"
               @click="handleDelete"/>
-        <Icon v-perm="'email:delete'" class="icon delete" icon="fluent:mail-read-20-regular" width="21" height="21"
+        <Icon v-perm="'email:delete'" class="icon delete" icon="hugeicons:mail-open" width="19" height="19"
               v-if="getSelectedMailsIds().length > 0 && showUnread"
               @click="handleRead"/>
       </div>
@@ -51,7 +51,7 @@
                            @click.stop></el-checkbox>
               <div @click.stop="starChange(item)" class="pc-star" v-if="showStar">
                 <Icon v-if="item.isStar" icon="fluent-color:star-16" width="20" height="20"/>
-                <Icon v-else icon="solar:star-line-duotone" width="18" height="18"/>
+                <Icon v-else icon="hugeicons:star" width="18" height="18"/>
               </div>
               <div v-if="!showStar"></div>
               <div class="title" :class="accountShow ? 'title-column' : 'title-column'">
@@ -95,13 +95,13 @@
                   <div class="user-info" v-if="showUserInfo">
                     <div class="user">
                       <span>
-                        <Icon icon="mynaui:user" width="20" height="20"/>
+                        <Icon icon="hugeicons:users" width="18" height="18"/>
                       </span>
                       <span v-html="item.userEmailHtml"></span>
                     </div>
                     <div class="account">
                       <span>
-                        <Icon icon="mdi-light:email" width="20" height="20"/>
+                        <Icon icon="hugeicons:mail" width="18" height="18"/>
                       </span>
                       <span v-html="item.accountEmailHtml"></span>
                     </div>

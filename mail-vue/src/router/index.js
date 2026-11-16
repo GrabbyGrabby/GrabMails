@@ -51,12 +51,76 @@ const routes = [
                     menu: true
                 }
             },
+            {
+                path: '/contacts',
+                name: 'contacts',
+                component: () => import('@/views/contacts/index.vue'),
+                meta: {
+                    title: 'contacts',
+                    name: 'contacts',
+                    menu: false
+                }
+            },
+            {
+                path: '/drive',
+                name: 'drive',
+                component: () => import('@/views/drive/index.vue'),
+                meta: {
+                    title: 'drive',
+                    name: 'drive',
+                    menu: false
+                }
+            },
+            {
+                path: '/calendar',
+                name: 'calendar',
+                component: () => import('@/views/calendar/index.vue'),
+                meta: {
+                    title: 'calendar',
+                    name: 'calendar',
+                    menu: false
+                }
+            },
+            {
+                path: '/agent',
+                name: 'agent',
+                component: () => import('@/views/ai-agent/index.vue'),
+                meta: {
+                    title: 'aiAgents',
+                    name: 'agent',
+                    menu: false
+                }
+            },
+            {
+                path: '/api-keys',
+                name: 'api-keys',
+                component: () => import('@/views/api-keys/index.vue'),
+                meta: {
+                    title: 'apiKeys',
+                    name: 'api-keys',
+                    menu: true
+                }
+            },
+            {
+                path: '/ai-agent',
+                redirect: '/agent'
+            },
         ]
 
     },
     {
         path: '/messages',
         redirect: '/inbox/messages'
+    },
+    {
+        path: '/book/:slug?',
+        name: 'booking',
+        component: () => import('@/views/book/index.vue')
+    },
+    {
+        path: '/d/:token',
+        name: 'drive-share',
+        component: () => import('@/views/drive/share.vue')
     },
     {
         path: '/login',
@@ -104,7 +168,7 @@ router.beforeEach((to, from, next) => {
 
     const token = localStorage.getItem('token')
 
-    if (!token && !to.path.startsWith('/login')) {
+    if (!token && !to.path.startsWith('/login') && !to.path.startsWith('/book') && !to.path.startsWith('/d/')) {
         return next({name: 'login'})
     }
 

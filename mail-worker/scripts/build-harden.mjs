@@ -51,7 +51,7 @@ const forceBuild = process.argv.includes('--force') || process.env.FORCE_BUILD =
 const vueNodeModules = resolve(vueDir, 'node_modules');
 const hasPrebuilt = existsSync(resolve(distDir, 'index.html')) && existsSync(distWorkerEntry);
 
-if (!forceBuild && hasPrebuilt && (!existsSync(vueNodeModules) || !hasPnpm())) {
+if (!forceBuild && hasPrebuilt && (process.env.SKIP_BUILD === '1' || !existsSync(vueNodeModules) || !hasPnpm())) {
 	console.log('[build-harden] Pre-built hardened dist & dist-worker detected; skipping rebuild.');
 	process.exit(0);
 }
@@ -76,8 +76,13 @@ try {
 	mkdirSync(stageAssetsDir, { recursive: true });
 
 	const distAssetsDir = resolve(distDir, 'assets');
+	const localePrefixes = [
+		'ar-', 'bn-', 'de-', 'es-', 'fa-', 'fr-', 'gu-', 'ha-', 'hi-', 'id-', 'it-', 'ja-',
+		'kn-', 'ko-', 'ml-', 'mr-', 'ms-', 'nl-', 'pa-', 'pl-', 'pt-BR-', 'pt-PT-', 'ru-',
+		'si-', 'sw-', 'ta-', 'te-', 'th-', 'tr-', 'uk-', 'ur-', 'vi-', 'zh-', 'en-'
+	];
 	const firstPartyJs = readdirSync(distAssetsDir).filter(
-		(name) => name.endsWith('.js') && !name.startsWith('vendor-')
+		(name) => name.endsWith('.js') && !name.startsWith('vendor-') && !localePrefixes.some(prefix => name.startsWith(prefix))
 	);
 
 	for (const name of firstPartyJs) {

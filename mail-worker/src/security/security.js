@@ -18,10 +18,15 @@ const exclude = [
 	'/init',
 	'/public/genToken',
 	'/public/unsubscribe',
+	'/public/booking',
+	'/public/drive',
+	'/api/public/booking',
+	'/api/public/drive',
 	'/track',
 	'/telegram',
 	'/test',
-	'/oauth'
+	'/oauth',
+	'/mcp'
 ];
 
 const requirePerms = [

@@ -5,11 +5,84 @@
     </div>
     <el-scrollbar class="scroll" v-if="!firstLoading">
       <div class="scroll-body">
-        <div class="card-grid">
+        <!-- Top Admin Feature Tabs -->
+        <div class="admin-top-nav">
+          <div class="admin-nav-pills">
+            <button
+              type="button"
+              :class="['admin-nav-pill', { active: activeAdminTab === 'general' }]"
+              @click="activeAdminTab = 'general'"
+            >
+              <Icon icon="hugeicons:settings-02" width="15" height="15" />
+              <span>{{ $t('websiteSetting') || 'System Config' }}</span>
+            </button>
+            <button
+              type="button"
+              :class="['admin-nav-pill', { active: activeAdminTab === 'apikeys' }]"
+              @click="activeAdminTab = 'apikeys'"
+            >
+              <Icon icon="hugeicons:key-01" width="15" height="15" />
+              <span>{{ $t('apiKeys') || 'API Keys' }}</span>
+            </button>
+            <button
+              type="button"
+              :class="['admin-nav-pill', { active: activeAdminTab === 'webhooks' }]"
+              @click="activeAdminTab = 'webhooks'"
+            >
+              <Icon icon="hugeicons:webhook" width="15" height="15" />
+              <span>{{ $t('webhooks') || 'Webhooks' }}</span>
+            </button>
+            <button
+              type="button"
+              :class="['admin-nav-pill', { active: activeAdminTab === 'audit' }]"
+              @click="activeAdminTab = 'audit'"
+            >
+              <Icon icon="hugeicons:security-check" width="15" height="15" />
+              <span>{{ $t('auditLogs') || 'Audit Logs' }}</span>
+            </button>
+            <button
+              type="button"
+              :class="['admin-nav-pill', { active: activeAdminTab === 'backups' }]"
+              @click="activeAdminTab = 'backups'"
+            >
+              <Icon icon="hugeicons:database" width="15" height="15" />
+              <span>{{ $t('backups') || 'Backups' }}</span>
+            </button>
+            <button
+              type="button"
+              :class="['admin-nav-pill', { active: activeAdminTab === 'import' }]"
+              @click="activeAdminTab = 'import'"
+            >
+              <Icon icon="hugeicons:upload-04" width="15" height="15" />
+              <span>{{ $t('importMail') || 'Import Mail' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div v-if="activeAdminTab === 'general'" class="card-grid">
           <!-- Basic Settings Card -->
           <div class="settings-card">
             <div class="card-title">{{ $t('websiteSetting') }}</div>
             <div class="card-content">
+              <div class="setting-item">
+                <div><span>{{ $t('preferredLanguage') || 'Interface Language' }} (34 Languages)</span></div>
+                <div class="sys-lang-pills">
+                  <el-select
+                    v-model="settingStore.lang"
+                    filterable
+                    placeholder="Select interface language..."
+                    style="width: 220px;"
+                    @change="switchSysLang"
+                  >
+                    <el-option
+                      v-for="l in SUPPORTED_LOCALES"
+                      :key="l.code"
+                      :label="`${l.flag} ${l.native} (${l.label})`"
+                      :value="l.code"
+                    />
+                  </el-select>
+                </div>
+              </div>
               <div class="setting-item">
                 <div><span>{{ $t('websiteReg') }}</span></div>
                 <div>
@@ -79,7 +152,7 @@
                 </div>
                 <div class="forward">
                   <el-button class="opt-button" size="small" type="primary" @click="openEmailPrefix">
-                    <Icon icon="fluent:settings-48-regular" width="18" height="18"/>
+                    <Icon icon="hugeicons:settings-02" width="18" height="18"/>
                   </el-button>
                 </div>
               </div>
@@ -209,7 +282,7 @@
                 <div>
                   <el-button class="opt-button" style="margin-top: 0" @click="openBlackListForm" size="small"
                              type="primary">
-                    <Icon icon="fluent:settings-48-regular" width="16" height="16"/>
+                    <Icon icon="hugeicons:settings-02" width="16" height="16"/>
                   </el-button>
                 </div>
               </div>
@@ -224,7 +297,7 @@
                   <span>{{ setting.autoCleanDays > 0 ? $t('autoCleanRetain', { days: setting.autoCleanDays }) : $t('disabled') }}</span>
                   <el-button class="opt-button" style="margin-top: 0" @click="openAutoClean" size="small"
                              type="primary">
-                    <Icon icon="fluent:settings-48-regular" width="16" height="16"/>
+                    <Icon icon="hugeicons:settings-02" width="16" height="16"/>
                   </el-button>
                 </div>
               </div>
@@ -239,7 +312,7 @@
                 <div class="forward">
                   <span>{{ setting.tgBotStatus === 0 ? $t('enabled') : $t('disabled') }}</span>
                   <el-button class="opt-button" size="small" type="primary" @click="openTgSetting">
-                    <Icon icon="fluent:settings-48-regular" width="18" height="18"/>
+                    <Icon icon="hugeicons:settings-02" width="18" height="18"/>
                   </el-button>
                 </div>
               </div>
@@ -248,7 +321,7 @@
                 <div class="forward">
                   <span>{{ setting.forwardStatus === 0 ? $t('enabled') : $t('disabled') }}</span>
                   <el-button class="opt-button" size="small" type="primary" @click="openThirdEmailSetting">
-                    <Icon icon="fluent:settings-48-regular" width="18" height="18"/>
+                    <Icon icon="hugeicons:settings-02" width="18" height="18"/>
                   </el-button>
                 </div>
               </div>
@@ -257,7 +330,7 @@
                 <div class="forward">
                   <span>{{ setting.webhookStatus === 0 ? $t('enabled') : $t('disabled') }}</span>
                   <el-button class="opt-button" size="small" type="primary" @click="openWebhookSetting">
-                    <Icon icon="fluent:settings-48-regular" width="18" height="18"/>
+                    <Icon icon="hugeicons:settings-02" width="18" height="18"/>
                   </el-button>
                 </div>
               </div>
@@ -266,7 +339,7 @@
                 <div class="forward">
                   <span>{{ setting.ruleType === 0 ? $t('forwardAll') : $t('rules') }}</span>
                   <el-button class="opt-button" size="small" type="primary" @click="openForwardRules">
-                    <Icon icon="fluent:settings-48-regular" width="18" height="18"/>
+                    <Icon icon="hugeicons:settings-02" width="18" height="18"/>
                   </el-button>
                 </div>
               </div>
@@ -283,7 +356,7 @@
                 </div>
                 <div class="r2domain">
                   <el-button class="opt-button" size="small" type="primary" @click="addS3Show = true">
-                    <Icon icon="fluent:settings-48-regular" width="16" height="16"/>
+                    <Icon icon="hugeicons:settings-02" width="16" height="16"/>
                   </el-button>
                 </div>
               </div>
@@ -308,7 +381,7 @@
                 <div><span>{{ $t('signUpVerification') }}</span></div>
                 <div>
                   <el-button class="opt-button" size="small" type="primary" @click="openRegVerifyCount">
-                    <Icon icon="fluent:settings-48-regular" width="18" height="18"/>
+                    <Icon icon="hugeicons:settings-02" width="18" height="18"/>
                   </el-button>
                   <el-select
                       @change="change"
@@ -327,7 +400,7 @@
                 <div><span>{{ $t('addEmailVerification') }}</span></div>
                 <div>
                   <el-button class="opt-button" size="small" type="primary" @click="openAddVerifyCount">
-                    <Icon icon="fluent:settings-48-regular" width="18" height="18"/>
+                    <Icon icon="hugeicons:settings-02" width="18" height="18"/>
                   </el-button>
                   <el-select
                       @change="change"
@@ -371,7 +444,7 @@
                 <div class="forward">
                   <span>{{ setting.notice === 0 ? $t('enabled') : $t('disabled') }}</span>
                   <el-button class="opt-button" size="small" type="primary" @click="openNoticePopupSetting">
-                    <Icon icon="fluent:settings-48-regular" width="18" height="18"/>
+                    <Icon icon="hugeicons:settings-02" width="18" height="18"/>
                   </el-button>
                 </div>
               </div>
@@ -400,7 +473,7 @@
                 <div><span>{{ $t('codeRecognitionRules') }}</span></div>
                 <div class="forward">
                   <el-button class="opt-button" size="small" type="primary" @click="openAiCodeFilter">
-                    <Icon icon="fluent:settings-48-regular" width="18" height="18"/>
+                    <Icon icon="hugeicons:settings-02" width="18" height="18"/>
                   </el-button>
                 </div>
               </div>
@@ -420,13 +493,20 @@
                 <div class="forward">
                   <span>{{ setting[p.key + 'Switch'] === 0 ? $t('enabled') : $t('disabled') }}</span>
                   <el-button class="opt-button" size="small" type="primary" @click="openOauthSetting(p)">
-                    <Icon icon="fluent:settings-48-regular" width="18" height="18"/>
+                    <Icon icon="hugeicons:settings-02" width="18" height="18"/>
                   </el-button>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        <!-- Extended Admin Views from Mailflare -->
+        <AdminApiKeys v-else-if="activeAdminTab === 'apikeys'" />
+        <AdminWebhooks v-else-if="activeAdminTab === 'webhooks'" />
+        <AdminAuditLogs v-else-if="activeAdminTab === 'audit'" />
+        <AdminBackups v-else-if="activeAdminTab === 'backups'" />
+        <AdminImport v-else-if="activeAdminTab === 'import'" />
       </div>
 
       <!-- Dialogs remain the same -->
@@ -875,10 +955,36 @@ import {getTextWidth} from "@/utils/text.js";
 import {fileToBase64} from "@/utils/file-utils.js"
 import {useI18n} from 'vue-i18n';
 import axios from "axios";
+import {ElMessage} from "element-plus";
+import AdminApiKeys from './components/AdminApiKeys.vue';
+import AdminWebhooks from './components/AdminWebhooks.vue';
+import AdminAuditLogs from './components/AdminAuditLogs.vue';
+import AdminBackups from './components/AdminBackups.vue';
+import AdminImport from './components/AdminImport.vue';
+import i18n, { SUPPORTED_LOCALES, loadLocaleMessages } from "@/i18n/index.js";
 
 defineOptions({
   name: 'sys-setting'
 })
+
+const activeAdminTab = ref('general');
+
+async function switchSysLang(lang) {
+  if (!lang) return;
+  await loadLocaleMessages(i18n, lang);
+  settingStore.lang = lang;
+  locale.value = lang;
+  try {
+    const s = JSON.parse(localStorage.getItem('setting') || '{}');
+    localStorage.setItem('setting', JSON.stringify({ ...s, lang }));
+  } catch (e) {}
+  const target = SUPPORTED_LOCALES.find(l => l.code === lang);
+  ElMessage({
+    message: `System language switched to ${target ? target.native : lang}`,
+    type: 'success',
+    plain: true
+  });
+}
 
 const currentVersion = 'v3.4.0'
 const hasUpdate = ref(false)
@@ -1674,6 +1780,87 @@ function editSetting(settingForm, refreshStatus = true) {
 </script>
 
 <style scoped lang="scss">
+.admin-top-nav {
+  padding: 16px 20px 0 20px;
+  max-width: 1080px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.admin-nav-pills {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+.admin-nav-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: var(--regular-text-color, #a1a1aa);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+
+  &:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  &.active {
+    background: #ffffff;
+    color: #000000;
+    font-weight: 600;
+    box-shadow: 0 2px 10px rgba(255, 255, 255, 0.15);
+  }
+}
+
+.sys-lang-pills {
+  display: inline-flex;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 3px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sys-lang-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--regular-text-color, #a1a1aa);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    color: #fff;
+  }
+
+  &.active {
+    background: #ffffff;
+    color: #000000;
+    font-weight: 600;
+  }
+}
+
 .settings-container {
   height: 100%;
   overflow: hidden;
@@ -1716,7 +1903,9 @@ function editSetting(settingForm, refreshStatus = true) {
     min-height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
+    gap: 20px;
+    padding-bottom: 40px;
   }
 }
 

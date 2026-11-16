@@ -57,7 +57,7 @@ export function getIconByName(filename) {
         color: ''
     };
     return {
-        icon: "solar:paperclip-rounded-2-bold",
+        icon: "hugeicons:paperclip",
         width: '24px',
         height: '24px',
         color: '#1CBBF0'

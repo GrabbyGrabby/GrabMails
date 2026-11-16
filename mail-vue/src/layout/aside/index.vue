@@ -10,38 +10,64 @@
             <div class="brand-title">{{ settingStore.settings.title || 'GrabMails' }}</div>
           </div>
           <button class="collapse-btn" type="button" @click="toggleExpand" title="Close sidebar">
-            <Icon icon="solar:alt-arrow-left-linear" width="18" height="18" />
+            <Icon icon="hugeicons:chevron-left" width="18" height="18" />
           </button>
         </div>
 
         <button v-perm="'email:send'" class="compose-bar" type="button" @click="openCompose">
+          <Icon icon="hugeicons:quill-write" width="18" height="18" style="margin-right: 6px;" />
           <span>{{ $t('compose') }}</span>
         </button>
 
         <el-menu :collapse="false" @select="navigateMenu" text-color="#fff" active-text-color="#ffffff" style="margin-top: 6px">
           <el-menu-item @click="navigateMenu('email')" index="email"
                         :class="route.meta.name === 'email' ? 'choose-item' : ''">
-            <Icon icon="solar:chat-round-line-linear" width="20" height="20" />
+            <Icon icon="hugeicons:inbox" width="20" height="20" />
             <span class="menu-name" style="margin-left: 16px">{{$t('inbox')}}</span>
           </el-menu-item>
           <el-menu-item @click="navigateMenu('send')" index="send" v-perm="'email:send'"
                         :class="route.meta.name === 'send' ? 'choose-item' : ''">
-            <Icon icon="cil:send" width="18" height="18" />
+            <Icon icon="hugeicons:mail-send-01" width="19" height="19" />
             <span class="menu-name" style="margin-left: 16px">{{$t('sent')}}</span>
           </el-menu-item>
           <el-menu-item @click="navigateMenu('draft')" index="draft" v-perm="'email:send'"
                         :class="route.meta.name === 'draft' ? 'choose-item' : ''">
-            <Icon icon="ep:document" width="18" height="18" />
+            <Icon icon="hugeicons:note-01" width="19" height="19" />
             <span class="menu-name" style="margin-left: 17px">{{$t('drafts')}}</span>
           </el-menu-item>
           <el-menu-item @click="navigateMenu('star')" index="star"
                         :class="route.meta.name === 'star' ? 'choose-item' : ''">
-            <Icon icon="solar:star-line-duotone" width="19" height="19" />
+            <Icon icon="hugeicons:star" width="19" height="19" />
             <span class="menu-name" style="margin-left: 16px">{{$t('starred')}}</span>
+          </el-menu-item>
+          <el-menu-item @click="navigateMenu('contacts')" index="contacts"
+                        :class="route.name === 'contacts' ? 'choose-item' : ''">
+            <Icon icon="hugeicons:user-group" width="19" height="19" />
+            <span class="menu-name" style="margin-left: 16px">{{$t('contacts') || 'Contacts'}}</span>
+          </el-menu-item>
+          <el-menu-item @click="navigateMenu('drive')" index="drive"
+                        :class="route.name === 'drive' ? 'choose-item' : ''">
+            <Icon icon="hugeicons:folder-01" width="19" height="19" />
+            <span class="menu-name" style="margin-left: 16px">{{$t('drive') || 'Drive'}}</span>
+          </el-menu-item>
+          <el-menu-item @click="navigateMenu('calendar')" index="calendar"
+                        :class="route.name === 'calendar' ? 'choose-item' : ''">
+            <Icon icon="hugeicons:calendar-03" width="19" height="19" />
+            <span class="menu-name" style="margin-left: 16px">{{$t('calendar') || 'Calendar'}}</span>
+          </el-menu-item>
+          <el-menu-item @click="navigateMenu('agent')" index="agent"
+                        :class="route.name === 'agent' ? 'choose-item' : ''">
+            <Icon icon="hugeicons:ai-brain-01" width="19" height="19" />
+            <span class="menu-name" style="margin-left: 16px">{{$t('aiAgents') || 'AI Agents'}}</span>
+          </el-menu-item>
+          <el-menu-item @click="navigateMenu('api-keys')" index="api-keys"
+                        :class="route.name === 'api-keys' ? 'choose-item' : ''">
+            <Icon icon="hugeicons:key-01" width="19" height="19" />
+            <span class="menu-name" style="margin-left: 16px">{{$t('apiKeys') || 'API Keys'}}</span>
           </el-menu-item>
           <el-menu-item @click="navigateMenu('setting')" index="setting"
                         :class="route.meta.name === 'setting' ? 'choose-item' : ''">
-            <Icon icon="fluent:settings-48-regular" width="19" height="19" />
+            <Icon icon="hugeicons:settings-02" width="19" height="19" />
             <span class="menu-name" style="margin-left: 16px">{{$t('settings')}}</span>
           </el-menu-item>
 
@@ -50,32 +76,32 @@
           </div>
           <el-menu-item @click="navigateMenu('analysis')" index="analysis" v-perm="'analysis:query'"
                         :class="route.meta.name === 'analysis' ? 'choose-item' : ''">
-            <Icon icon="solar:chart-2-linear" width="22" height="22" />
+            <Icon icon="hugeicons:activity" width="20" height="20" />
             <span class="menu-name" style="margin-left: 15px">{{$t('analytics')}}</span>
           </el-menu-item>
           <el-menu-item @click="navigateMenu('user')" index="user" v-perm="'user:query'"
                         :class="route.meta.name === 'user' ? 'choose-item' : ''">
-            <Icon icon="si:user-alt-2-line" width="20" height="20" />
+            <Icon icon="hugeicons:users" width="20" height="20" />
             <span class="menu-name" style="margin-left: 16px">{{$t('allUsers')}}</span>
           </el-menu-item>
           <el-menu-item @click="navigateMenu('all-email')" index="all-email" v-perm="'all-email:query'"
                         :class="route.meta.name === 'all-email' ? 'choose-item' : ''">
-            <Icon icon="solar:widget-2-linear" width="20" height="20" />
+            <Icon icon="hugeicons:archive-03" width="20" height="20" />
             <span class="menu-name" style="margin-left: 16px">{{$t('allMail')}}</span>
           </el-menu-item>
           <el-menu-item @click="navigateMenu('role')" index="role" v-perm="'role:query'"
                         :class="route.meta.name === 'role' ? 'choose-item' : ''">
-            <Icon icon="fluent:lock-closed-16-regular" width="20" height="20" />
+            <Icon icon="hugeicons:lock-keyhole" width="20" height="20" />
             <span class="menu-name" style="margin-left: 16px">{{$t('permissions')}}</span>
           </el-menu-item>
           <el-menu-item @click="navigateMenu('reg-key')" index="reg-key" v-perm="'reg-key:query'"
                         :class="route.meta.name === 'reg-key' ? 'choose-item' : ''">
-            <Icon icon="solar:bag-2-linear" width="20" height="20" />
+            <Icon icon="hugeicons:shield-check" width="20" height="20" />
             <span class="menu-name" style="margin-left: 16px">{{$t('inviteCode')}}</span>
           </el-menu-item>
           <el-menu-item @click="navigateMenu('sys-setting')" index="sys-setting" v-perm="'setting:query'"
                         :class="route.meta.name === 'sys-setting' ? 'choose-item' : ''">
-            <Icon icon="eos-icons:system-ok-outlined" width="18" height="18" style="margin-left: 2px" />
+            <Icon icon="hugeicons:settings" width="19" height="19" style="margin-left: 2px" />
             <span class="menu-name" style="margin-left: 17px">{{$t('SystemSettings')}}</span>
           </el-menu-item>
         </el-menu>

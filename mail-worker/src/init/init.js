@@ -35,8 +35,151 @@ const dbInit = {
 		await this.v3_3DB(c);
 		await this.v3_4DB(c);
 		await this.v3_5DB(c);
+		await this.v3_6DB(c);
 		await settingService.refresh(c);
 		return c.text('success');
+	},
+
+	async initDB(c) {
+		return this.init(c);
+	},
+
+	async v3_6DB(c) {
+		try {
+			await c.env.db.batch([
+				c.env.db.prepare(`
+					CREATE TABLE IF NOT EXISTS contacts (
+						contact_id INTEGER PRIMARY KEY AUTOINCREMENT,
+						user_id INTEGER NOT NULL,
+						account_id INTEGER,
+						email TEXT NOT NULL COLLATE NOCASE,
+						display_name TEXT,
+						avatar_key TEXT,
+						source TEXT NOT NULL DEFAULT 'manual',
+						blocked INTEGER NOT NULL DEFAULT 0,
+						remote_content_allowed INTEGER NOT NULL DEFAULT 0,
+						last_seen_at TEXT,
+						create_time TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+					);
+				`),
+				c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_contacts_user_email ON contacts(user_id, email);`),
+				c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_contacts_user_id ON contacts(user_id);`)
+			]);
+		} catch (e) {
+			console.warn(`Skip contacts table init: ${e.message}`);
+		}
+
+		try {
+			await c.env.db.batch([
+				c.env.db.prepare(`
+					CREATE TABLE IF NOT EXISTS drive_items (
+						item_id TEXT PRIMARY KEY,
+						user_id INTEGER NOT NULL,
+						parent_id TEXT,
+						kind TEXT NOT NULL,
+						name TEXT NOT NULL,
+						r2_key TEXT,
+						size INTEGER NOT NULL DEFAULT 0,
+						content_type TEXT NOT NULL DEFAULT 'application/octet-stream',
+						upload_id TEXT,
+						link_token TEXT,
+						trashed_at TEXT,
+						create_time TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+						update_time TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+					);
+				`),
+				c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_drive_items_user_parent ON drive_items(user_id, parent_id);`),
+				c.env.db.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_drive_items_link_token ON drive_items(link_token);`),
+				c.env.db.prepare(`
+					CREATE TABLE IF NOT EXISTS drive_shares (
+						share_id TEXT PRIMARY KEY,
+						item_id TEXT NOT NULL,
+						user_id INTEGER NOT NULL,
+						role TEXT NOT NULL DEFAULT 'view',
+						create_time TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+					);
+				`)
+			]);
+		} catch (e) {
+			console.warn(`Skip drive tables init: ${e.message}`);
+		}
+
+		try {
+			await c.env.db.batch([
+				c.env.db.prepare(`
+					CREATE TABLE IF NOT EXISTS calendar_events (
+						event_id TEXT PRIMARY KEY,
+						user_id INTEGER NOT NULL,
+						account_id INTEGER,
+						title TEXT NOT NULL,
+						description TEXT NOT NULL DEFAULT '',
+						location TEXT NOT NULL DEFAULT '',
+						attendees TEXT NOT NULL DEFAULT '[]',
+						color TEXT NOT NULL DEFAULT '#2563eb',
+						repeat TEXT NOT NULL DEFAULT 'none',
+						repeat_days TEXT NOT NULL DEFAULT '[]',
+						repeat_anchor_day INTEGER,
+						repeat_until TEXT,
+						excluded_occurrences TEXT NOT NULL DEFAULT '[]',
+						time_zone TEXT NOT NULL DEFAULT 'UTC',
+						starts_at TEXT NOT NULL,
+						ends_at TEXT NOT NULL,
+						reminder_minutes INTEGER,
+						response_status TEXT,
+						invite_message_id TEXT,
+						create_time TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+						update_time TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+					);
+				`),
+				c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_calendar_events_user_starts ON calendar_events(user_id, starts_at);`)
+			]);
+		} catch (e) {
+			console.warn(`Skip calendar_events table init: ${e.message}`);
+		}
+
+		try {
+			await c.env.db.batch([
+				c.env.db.prepare(`
+					CREATE TABLE IF NOT EXISTS booking_events (
+						event_id TEXT PRIMARY KEY,
+						user_id INTEGER NOT NULL,
+						name TEXT NOT NULL,
+						slug TEXT NOT NULL,
+						description TEXT NOT NULL DEFAULT '',
+						color TEXT NOT NULL DEFAULT '#2563eb',
+						duration_minutes INTEGER NOT NULL DEFAULT 30,
+						location TEXT NOT NULL DEFAULT '',
+						weekdays TEXT NOT NULL DEFAULT '[1,2,3,4,5]',
+						start_time TEXT NOT NULL DEFAULT '09:00',
+						end_time TEXT NOT NULL DEFAULT '17:00',
+						time_ranges TEXT NOT NULL DEFAULT '[{"startTime":"09:00","endTime":"17:00"}]',
+						time_zone TEXT NOT NULL DEFAULT 'UTC',
+						enabled INTEGER NOT NULL DEFAULT 1,
+						confirmation_subject TEXT NOT NULL DEFAULT '',
+						confirmation_body TEXT NOT NULL DEFAULT '',
+						create_time TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+						update_time TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+					);
+				`),
+				c.env.db.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_booking_events_user_slug ON booking_events(user_id, slug);`)
+			]);
+		} catch (e) {
+			console.warn(`Skip booking_events table init: ${e.message}`);
+		}
+
+		const userColumns = [
+			`ALTER TABLE user ADD COLUMN booking_username TEXT DEFAULT '';`,
+			`ALTER TABLE user ADD COLUMN calendar_enabled INTEGER NOT NULL DEFAULT 1;`,
+			`ALTER TABLE user ADD COLUMN drive_enabled INTEGER NOT NULL DEFAULT 1;`
+		];
+
+		for (const sql of userColumns) {
+			try {
+				await c.env.db.prepare(sql).run();
+			} catch (e) {
+				console.warn(`Skip user column alter: ${e.message}`);
+			}
+		}
 	},
 
 	async v3_5DB(c) {

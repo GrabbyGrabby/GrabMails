@@ -10,8 +10,8 @@
         >
         </el-input>
       </div>
-      <Icon class="icon" icon="iconoir:search" @click="search" width="20" height="20"/>
-      <Icon class="icon" icon="ion:reload" width="18" height="18" @click="refresh"/>
+      <Icon class="icon" icon="hugeicons:search" @click="search" width="20" height="20"/>
+      <Icon class="icon" icon="hugeicons:refresh-cw" width="18" height="18" @click="refresh"/>
       <Icon class="icon" icon="fluent:broom-sparkle-16-regular" width="22" height="22" @click="clearNotUse"/>
     </div>
 
@@ -43,7 +43,7 @@
             </div>
             <div class="info-right">
               <el-dropdown class="setting">
-                <Icon icon="fluent:settings-24-filled" width="21" height="21" color="#909399"/>
+                <Icon icon="hugeicons:settings-02" width="21" height="21" color="#909399"/>
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item @click="copyCode(item.code)">{{ $t('copy') }}</el-dropdown-item>

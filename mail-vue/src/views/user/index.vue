@@ -17,13 +17,13 @@
         <el-option :key="1" :label="$t('banned')" :value="1"/>
         <el-option :key="-2" :label="$t('deleted')" :value="-2"/>
       </el-select>
-      <Icon class="icon" icon="iconoir:search" @click="search" width="20" height="20"/>
+      <Icon class="icon" icon="hugeicons:search" @click="search" width="20" height="20"/>
       <Icon class="icon" @click="changeTimeSort" icon="material-symbols-light:timer-arrow-down-outline"
             v-if="params.timeSort === 1" width="28" height="28"/>
       <Icon class="icon" @click="changeTimeSort" icon="material-symbols-light:timer-arrow-up-outline" v-else width="28"
             height="28"/>
-      <Icon class="icon" icon="ion:reload" width="18" height="18" @click="refresh"/>
-      <Icon class="icon" icon="uiw:delete" width="16" height="16" @click="delUser"/>
+      <Icon class="icon" icon="hugeicons:refresh-cw" width="18" height="18" @click="refresh"/>
+      <Icon class="icon" icon="hugeicons:delete-02" width="18" height="18" @click="delUser"/>
     </div>
     <el-scrollbar ref="scrollbarRef" class="scrollbar">
       <div>

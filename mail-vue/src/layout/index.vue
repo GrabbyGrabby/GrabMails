@@ -22,7 +22,11 @@
     </el-container>
 
     <!-- Modern Floating Glass Dock Navbar (Capsule & Bencho Style) -->
-    <nav class="floating-dock-bar" aria-label="Floating Modern Navigation">
+    <nav
+      class="floating-dock-bar"
+      :class="{ 'is-hidden': !isDockVisible }"
+      aria-label="Floating Modern Navigation"
+    >
       <MagnifyingDockVue
         :items="dockItems"
         :activeItem="activeDockItem"
@@ -41,8 +45,8 @@ import Aside from '@/layout/aside/index.vue'
 import Header from '@/layout/header/index.vue'
 import Main from '@/layout/main/index.vue'
 import MagnifyingDockVue from '@/components/MagnifyingDockVue.vue'
-import { House, Send, Star, Settings } from 'lucide-react'
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { Inbox, Contact, Folder, Calendar, Settings } from 'lucide-react'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useUiStore } from "@/store/ui.js"
 import { useRouter, useRoute } from 'vue-router'
 import writer from '@/layout/write/index.vue'
@@ -52,19 +56,26 @@ const route = useRoute()
 const uiStore = useUiStore()
 const writerRef = ref({})
 const isMobile = ref(typeof window !== 'undefined' ? window.innerWidth < 1025 : false)
+const isDockVisible = ref(true)
+
+let lastScrollY = 0
+let scrollTimeout = null
+let touchStartY = 0
 
 const dockItems = [
-  { key: 'email', label: 'Inbox', Icon: House },
-  { key: 'send', label: 'Sent', Icon: Send },
-  { key: 'star', label: 'Starred', Icon: Star },
+  { key: 'email', label: 'Inbox', Icon: Inbox },
+  { key: 'contacts', label: 'Contacts', Icon: Contact },
+  { key: 'drive', label: 'Drive', Icon: Folder },
+  { key: 'calendar', label: 'Calendar', Icon: Calendar },
   { key: 'setting', label: 'Settings', Icon: Settings },
 ]
 
 const activeDockItem = computed(() => {
   const name = route.name
-  if (name === 'email' || name === 'content') return 'email'
-  if (name === 'send') return 'send'
-  if (name === 'star') return 'star'
+  if (name === 'email' || name === 'content' || name === 'send' || name === 'star') return 'email'
+  if (name === 'contacts') return 'contacts'
+  if (name === 'drive') return 'drive'
+  if (name === 'calendar') return 'calendar'
   if (name === 'setting' || name === 'sys-setting') return 'setting'
   return 'email'
 })
@@ -74,6 +85,59 @@ function handleDockSelect(key) {
     router.push({ name: key })
   }
 }
+
+// ── Smart Scroll Hide / Reveal for Floating Dock ──
+const handleGlobalScroll = (e) => {
+  const target = e.target
+  let currentY = 0
+  if (target === document || target === window) {
+    currentY = window.pageYOffset || document.documentElement.scrollTop || 0
+  } else if (target && typeof target.scrollTop === 'number') {
+    currentY = target.scrollTop
+  }
+
+  const delta = currentY - lastScrollY
+
+  // When scrolling DOWN more than 8px and past top threshold -> hide dock
+  if (delta > 8 && currentY > 25) {
+    isDockVisible.value = false
+  }
+  // When scrolling UP more than 5px or at the very top -> reveal dock
+  else if (delta < -5 || currentY <= 15) {
+    isDockVisible.value = true
+  }
+
+  lastScrollY = currentY
+
+  // Auto-reveal after 1.2s when user pauses scrolling so navigation is always accessible
+  if (scrollTimeout) clearTimeout(scrollTimeout)
+  scrollTimeout = setTimeout(() => {
+    isDockVisible.value = true
+  }, 1200)
+}
+
+const handleTouchStart = (e) => {
+  if (e.touches && e.touches[0]) {
+    touchStartY = e.touches[0].clientY
+  }
+}
+
+const handleTouchMove = (e) => {
+  if (!e.touches || !e.touches[0]) return
+  const currentY = e.touches[0].clientY
+  const delta = touchStartY - currentY // positive = swiping up (content moves down)
+  if (delta > 12) {
+    isDockVisible.value = false
+  } else if (delta < -8) {
+    isDockVisible.value = true
+  }
+}
+
+// Ensure dock is always visible upon route navigation
+watch(() => route.path, () => {
+  isDockVisible.value = true
+  lastScrollY = 0
+})
 
 const handleResize = () => {
   const mobile = window.innerWidth < 1025
@@ -86,11 +150,18 @@ const handleResize = () => {
 onMounted(() => {
   uiStore.writerRef = writerRef
   window.addEventListener('resize', handleResize)
+  document.addEventListener('scroll', handleGlobalScroll, { passive: true, capture: true })
+  document.addEventListener('touchstart', handleTouchStart, { passive: true })
+  document.addEventListener('touchmove', handleTouchMove, { passive: true })
   handleResize()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
+  document.removeEventListener('scroll', handleGlobalScroll, true)
+  document.removeEventListener('touchstart', handleTouchStart)
+  document.removeEventListener('touchmove', handleTouchMove)
+  if (scrollTimeout) clearTimeout(scrollTimeout)
 })
 </script>
 
@@ -222,19 +293,31 @@ html:not(.dark) .aside {
   position: fixed;
   bottom: 20px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateY(0);
   z-index: 999;
   display: flex;
   justify-content: center;
   align-items: center;
   pointer-events: auto;
-  transition: all 240ms cubic-bezier(0.16, 1, 0.3, 1);
-  filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.12));
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1), opacity 260ms ease, filter 260ms ease;
+  filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.25));
+
+  &.is-hidden {
+    transform: translateX(-50%) translateY(120px);
+    opacity: 0;
+    pointer-events: none;
+    filter: drop-shadow(0 0 0 transparent);
+  }
 
   @media (max-width: 767px) {
     bottom: 14px;
-    scale: 0.92;
     transform-origin: center bottom;
+
+    &.is-hidden {
+      transform: translateX(-50%) translateY(110px) scale(0.92);
+      opacity: 0;
+      pointer-events: none;
+    }
   }
 }
 

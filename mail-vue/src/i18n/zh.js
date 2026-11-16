@@ -1,4 +1,8 @@
 const zh = {
+    apps: '应用',
+    calendar: '日历',
+    drive: '云盘',
+    contacts: '联系人',
     inbox: '收件箱',
     compose: '撰写邮件',
     drafts: '草稿箱',
@@ -385,5 +389,16 @@ const zh = {
     clientId: '客户端 ID',
     clientSecret: '客户端密钥',
     notOwner: '基础邮箱不属于您',
+    aiAgent: 'AI 智能体',
+    aiAgents: 'AI 智能体',
+    mcp: 'MCP 服务',
+    apiKeys: 'API 密钥',
+    webhooks: 'Webhooks 回调',
+    auditLogs: '审计日志',
+    backups: '数据备份',
+    importMail: '邮件导入',
+    booking: '预约日历',
+    searchMailDesc: '搜索邮件、起草回复、管理日程事件，并支持通过 MCP 连接其他 AI 工具。',
+
 }
 export default zh

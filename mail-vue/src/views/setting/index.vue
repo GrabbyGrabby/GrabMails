@@ -35,16 +35,48 @@
     <div class="language">
       <div class="title">{{$t('language')}}</div>
       <div class="language-row setting-row">
-        <div>{{$t('preferredLanguage')}}</div>
-        <el-select
-            :model-value="langSelect"
-            class="language-select"
-            placeholder="Select"
+        <div>
+          <div class="setting-label-main">{{$t('preferredLanguage')}} (34 Languages)</div>
+          <div class="setting-subtext">Choose your interface language / 选择系统显示语言</div>
+        </div>
+        <div class="lang-selector-wrap">
+          <el-select
+            v-model="settingStore.lang"
+            filterable
+            placeholder="Select language..."
+            class="lang-select-dropdown"
             @change="changeLang"
-        >
-          <el-option label="中文" value="zh" @pointerdown.prevent.stop="changeLang('zh')"/>
-          <el-option label="English" value="en" @pointerdown.prevent.stop="changeLang('en')"/>
-        </el-select>
+          >
+            <el-option
+              v-for="l in SUPPORTED_LOCALES"
+              :key="l.code"
+              :label="`${l.flag} ${l.native} (${l.label})`"
+              :value="l.code"
+            >
+              <div class="lang-option-item">
+                <span class="lang-opt-flag">{{ l.flag }}</span>
+                <span class="lang-opt-native">{{ l.native }}</span>
+                <span class="lang-opt-label">({{ l.label }})</span>
+                <span v-if="l.dir === 'rtl'" class="lang-rtl-badge">RTL</span>
+              </div>
+            </el-option>
+          </el-select>
+        </div>
+      </div>
+    </div>
+    <div class="preference-item">
+      <div class="title">{{ $t('apiKeys') || 'API Keys & MCP Access' }}</div>
+      <div class="language-row setting-row">
+        <div>
+          <div class="setting-label-main">Connect AI agents over MCP</div>
+          <div class="setting-subtext">Manage authentication keys for Claude Desktop, Cursor, and automated tools</div>
+        </div>
+        <div>
+          <el-button type="primary" @click="$router.push('/api-keys')">
+            <Icon icon="hugeicons:key-01" width="16" height="16" style="margin-right: 6px;" />
+            <span>Manage API Keys</span>
+          </el-button>
+        </div>
       </div>
     </div>
     <div class="preference-item">
@@ -81,7 +113,7 @@
   </div>
 </template>
 <script setup>
-import {reactive, ref, defineOptions} from 'vue'
+import {reactive, ref, computed, defineOptions} from 'vue'
 import {resetPassword, userDelete} from "@/request/my.js";
 import {useUserStore} from "@/store/user.js";
 import router from "@/router/index.js";
@@ -91,6 +123,7 @@ import {useI18n} from "vue-i18n";
 import {useSettingStore} from "@/store/setting.js";
 import {useUiStore} from "@/store/ui.js";
 import ThemeSelector from "@/components/theme-selector/index.vue";
+import i18n, { SUPPORTED_LOCALES, loadLocaleMessages } from "@/i18n/index.js";
 
 const { t } = useI18n()
 const accountStore = useAccountStore()
@@ -145,15 +178,22 @@ function setName() {
   })
 }
 
-function changeLang(lang) {
-  let setting = {}
+async function changeLang(lang) {
+  if (!lang) return
+  await loadLocaleMessages(i18n, lang)
+  settingStore.lang = lang
+  i18n.global.locale.value = lang
+  langSelect.value = lang
   try {
-    setting = JSON.parse(localStorage.getItem('setting') || '{}')
-  } catch (e) {
-    setting = {}
-  }
-  localStorage.setItem('setting', JSON.stringify({...setting, lang}))
-  window.location.reload()
+    const s = JSON.parse(localStorage.getItem('setting') || '{}')
+    localStorage.setItem('setting', JSON.stringify({ ...s, lang }))
+  } catch (e) {}
+  const target = SUPPORTED_LOCALES.find(l => l.code === lang)
+  ElMessage({
+    message: `Language switched to ${target ? target.native : lang}`,
+    type: 'success',
+    plain: true
+  })
 }
 
 const pwdShow = ref(false)
@@ -334,6 +374,67 @@ function submitPwd() {
   .language-select {
     width: 110px;
     max-width: 100%;
+  }
+
+  .setting-label-main {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--primary-text-color, #f4f4f5);
+  }
+
+  .setting-subtext {
+    font-size: 12px;
+    color: var(--placeholder-color, #71717a);
+    margin-top: 3px;
+    line-height: 1.4;
+  }
+
+  .lang-selector-wrap {
+    width: 280px;
+    max-width: 100%;
+  }
+
+  .lang-select-dropdown {
+    width: 100%;
+  }
+
+  .lang-option-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    width: 100%;
+  }
+
+  .lang-opt-flag {
+    font-size: 16px;
+  }
+
+  .lang-opt-native {
+    font-weight: 500;
+  }
+
+  .lang-opt-label {
+    font-size: 11.5px;
+    color: var(--el-text-color-secondary, #94a3b8);
+  }
+
+  .lang-rtl-badge {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgba(244, 63, 94, 0.15);
+    color: #f43f5e;
+  }
+
+  .quick-lang-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+    width: 100%;
   }
 
   .del-email {

@@ -13,6 +13,13 @@ export default defineConfig(({mode}) => {
             host: true,
             port: 3001,
             hmr: true,
+            proxy: {
+                '/api': {
+                    target: 'https://grabby-mail.grabbymark.workers.dev',
+                    changeOrigin: true,
+                    secure: false,
+                }
+            }
         },
         esbuild: {
             jsx: 'automatic',

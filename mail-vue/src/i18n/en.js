@@ -1,4 +1,8 @@
 const en = {
+    apps: 'Apps',
+    calendar: 'Calendar',
+    drive: 'Drive',
+    contacts: 'Contacts',
     inbox: 'Inbox',
     compose: 'Compose',
     drafts: 'Drafts',
@@ -385,6 +389,17 @@ const en = {
     clientId: 'Client ID',
     clientSecret: 'Client Secret',
     notOwner: 'Base email does not belong to you',
+    aiAgent: 'AI Agents',
+    aiAgents: 'AI Agents',
+    mcp: 'MCP Server',
+    apiKeys: 'API Keys',
+    webhooks: 'Webhooks',
+    auditLogs: 'Audit Logs',
+    backups: 'Backups',
+    importMail: 'Import Mail',
+    booking: 'Booking',
+    searchMailDesc: 'Search mail, draft replies and manage events. Connect other AI tools over MCP.',
+
 }
 
 export default en

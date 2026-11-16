@@ -55,6 +55,10 @@ export default {
 			return app.fetch(req, env, ctx);
 		}
 
+		if (url.pathname === '/mcp' || url.pathname.startsWith('/mcp/')) {
+			return app.fetch(req, env, ctx);
+		}
+
 		if (url.pathname.startsWith('/oss/')) {
 			const rawKey = url.pathname.slice('/oss/'.length);
 			if (!r2Service.validatePublicKey(rawKey)) {

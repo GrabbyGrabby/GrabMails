@@ -310,6 +310,7 @@ button, input, select, textarea {
     --el-button-border-color: #000000 !important;
     --el-button-hover-bg-color: #27272a !important;
     --el-button-hover-border-color: #27272a !important;
+    --el-button-hover-text-color: #ffffff !important;
     --el-button-active-bg-color: #09090b !important;
     --el-button-active-border-color: #09090b !important;
     --el-button-text-color: #ffffff !important;
@@ -322,6 +323,7 @@ button, input, select, textarea {
     --el-button-border-color: #ffffff !important;
     --el-button-hover-bg-color: #f4f4f5 !important;
     --el-button-hover-border-color: #f4f4f5 !important;
+    --el-button-hover-text-color: #000000 !important;
     --el-button-active-bg-color: #e4e4e7 !important;
     --el-button-active-border-color: #e4e4e7 !important;
     --el-button-text-color: #000000 !important;
@@ -330,6 +332,77 @@ button, input, select, textarea {
 .el-button {
     border-radius: 9999px !important;
     font-weight: 500 !important;
+}
+
+/* ══ BUTTON HOVER TEXT: When buttons turn white/light during hover, text MUST be black ══ */
+.el-button:hover,
+.el-button:focus,
+.el-button.is-hover,
+.el-button--default:hover,
+.el-button--default:focus,
+.dark .el-button:hover,
+.dark .el-button:focus,
+.dark .el-button.is-hover,
+.dark .el-button--default:hover,
+.dark .el-button--default:focus,
+.dark .el-button--primary:hover,
+.dark .el-button--primary:focus,
+.dark .primary-action-btn:hover,
+.dark .primary-action-btn:focus,
+.dark .secondary-action-btn:hover,
+.dark .secondary-action-btn:focus,
+.dark .action-btn:hover,
+.dark .action-btn:focus,
+.dark .drive-btn:hover,
+.dark .drive-btn:focus,
+.dark .cal-btn:hover,
+.dark .cal-btn:focus,
+.dark .opt-button:hover,
+.dark .opt-button:focus,
+.dark .modern-logout-btn:hover,
+.dark .admin-tab-btn:hover,
+.dark .admin-tab-btn:focus,
+.dark .lang-pill-btn:hover,
+.dark .quick-outreach-btn:hover,
+.dark .mini-action-btn:hover,
+[data-theme="dark"] .el-button:hover,
+[data-theme="dark"] .el-button:focus,
+.action-btn:hover,
+.action-btn:focus,
+.drive-btn:hover,
+.drive-btn:focus,
+.cal-btn:hover,
+.cal-btn:focus,
+.admin-nav-pill:hover,
+.nav-tab-btn:hover {
+    --el-button-hover-text-color: #000000 !important;
+    --el-button-text-color: #000000 !important;
+    color: #000000 !important;
+}
+
+.el-button:hover *,
+.el-button:focus *,
+.dark .el-button:hover *,
+.dark .el-button:focus *,
+.dark .el-button--default:hover *,
+.dark .el-button--default:focus *,
+.dark .el-button--primary:hover *,
+.dark .el-button--primary:focus *,
+.dark .primary-action-btn:hover *,
+.dark .action-btn:hover *,
+.dark .drive-btn:hover *,
+.dark .cal-btn:hover *,
+.dark .modern-logout-btn:hover *,
+.dark .admin-tab-btn:hover *,
+.dark .lang-pill-btn:hover *,
+.action-btn:hover *,
+.drive-btn:hover *,
+.cal-btn:hover *,
+.admin-nav-pill:hover *,
+.nav-tab-btn:hover *,
+[data-theme="dark"] .el-button:hover * {
+    color: #000000 !important;
+    fill: currentColor !important;
 }
 
 /* Switch & Checkbox Monochrome Overrides (Remove Blue) */
