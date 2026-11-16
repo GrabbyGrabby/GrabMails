@@ -1,3 +1,4 @@
+import { listMcpKeys, issueMcpKey, revokeMcpKey } from '../service/mcp-key-service.js';
 import app from '../hono/hono';
 import result from '../model/result';
 import BizError from '../error/biz-error';
@@ -12,7 +13,6 @@ import dayjs from 'dayjs';
  * - Import Wizard (IMAP sync & MBOX/EML staging)
  */
 
-const KV_API_KEYS = 'grabmails_admin_api_keys';
 const KV_WEBHOOKS = 'grabmails_admin_webhooks';
 const KV_AUDIT_LOGS = 'grabmails_admin_audit_logs';
 
@@ -34,48 +34,13 @@ async function setKvList(kv, key, list) {
 	} catch (e) {}
 }
 
-// ── 1. API KEYS ──
-app.get('/admin/api-keys', async (c) => {
-	const kv = c.env.kv;
-	const list = await getKvList(kv, KV_API_KEYS);
-	return c.json(result.ok(list));
-});
-
-app.post('/admin/api-keys', async (c) => {
-	const body = await c.req.json().catch(() => ({}));
-	const { name = 'Default Key', scopes = ['mcp:read', 'mcp:draft', 'mcp:calendar'] } = body;
-	const kv = c.env.kv;
-
-	const randHex = Array.from(crypto.getRandomValues(new Uint8Array(18)))
-		.map(b => b.toString(16).padStart(2, '0'))
-		.join('');
-	const fullKey = `gbk_live_${randHex}`;
-	const prefix = fullKey.slice(0, 14);
-
-	const item = {
-		id: `key_${Date.now()}`,
-		name,
-		prefix: `${prefix}...`,
-		fullKey,
-		scopes,
-		createdAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-		lastUsedAt: 'Never'
-	};
-
-	const list = await getKvList(kv, KV_API_KEYS);
-	list.unshift(item);
-	await setKvList(kv, KV_API_KEYS, list);
-
-	return c.json(result.ok(item));
-});
-
-app.delete('/admin/api-keys/:id', async (c) => {
-	const id = c.req.param('id');
-	const kv = c.env.kv;
-	let list = await getKvList(kv, KV_API_KEYS);
-	list = list.filter(k => k.id !== id);
-	await setKvList(kv, KV_API_KEYS, list);
-	return c.json(result.ok());
+// Key management requires the signed-in user's session (security middleware).
+app.get('/admin/api-keys', async c => c.json(result.ok(await listMcpKeys(c.env.kv, c.get('user').userId))));
+app.post('/admin/api-keys', async c => c.json(result.ok(await issueMcpKey(c.env.kv, c.get('user').userId, await c.req.json()))));
+app.post('/admin/api-keys/:id/reauthorize', async c => c.json(result.ok(await issueMcpKey(c.env.kv, c.get('user').userId, await c.req.json(), c.req.param('id')))));
+app.delete('/admin/api-keys/:id', async c => {
+    await revokeMcpKey(c.env.kv, c.get('user').userId, c.req.param('id'));
+    return c.json(result.ok());
 });
 
 // ── 2. WEBHOOKS ──
