@@ -27,5 +27,6 @@ mail-vue/node_modules
 .dev.vars
 .bla-hardened
 .bla-tmp
+mail-worker/dist-worker/
 .venv
 git-tools.js
