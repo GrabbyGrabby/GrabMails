@@ -1,5 +1,6 @@
 name = "grabby-mail"
-main = "dist-worker/index.js"
+# Compile reviewed source on every deployment; never deploy a checked-in bundle.
+main = "src/index.js"
 compatibility_date = "2025-06-04"
 keep_vars = true
 

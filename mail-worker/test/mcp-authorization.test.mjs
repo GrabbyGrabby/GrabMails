@@ -5,6 +5,13 @@ import { issueMcpKey, listMcpKeys, authenticateMcpKey, revokeMcpKey } from '../s
 import { registerMcpRoutes } from '../src/service/mcp-routes.js';
 import { MCP_TOOLS } from '../src/utils/mcp-tools.js';
 import { MCP_TOOLS as uiTools } from '../../mail-vue/src/utils/mcp-tools.js';
+import { pathToFileURL } from 'node:url';
+import { resolve } from 'node:path';
+
+// CI reruns these HTTP assertions against Wrangler's actual deployment output.
+const deployedWorker = process.env.MCP_WORKER_BUNDLE
+    ? (await import(pathToFileURL(resolve(process.env.MCP_WORKER_BUNDLE)).href)).default
+    : null;
 
 function fixture() {
     const records = new Map();
@@ -53,12 +60,18 @@ test('MCP HTTP authentication, filtered discovery, call enforcement, and reautho
     const { kv } = fixture();
     let queries = [];
     const db = { prepare(sql) { return { bind(...args) { queries.push({ sql, args }); return { first: async () => ({ userId: 1, email: 'owner@example.com' }), all: async () => ({ results: [] }) }; } }; } };
-    const app = new Hono();
-    registerMcpRoutes(app);
+    const app = deployedWorker ? {
+        request(path, init, env) {
+            return deployedWorker.fetch(new Request(`https://example.com${path}`, init), env, { waitUntil() {} });
+        }
+    } : new Hono();
+    if (!deployedWorker) registerMcpRoutes(app);
     let key = await issueMcpKey(kv, 1, consent(['search_emails']));
     const request = (method, params, token = key.fullKey) => app.request('/mcp', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) }, { kv, db });
     assert.equal((await request('tools/list', {}, 'bad')).status, 401);
     assert.equal((await app.request('/mcp', {}, { kv, db })).status, 401);
+    assert.equal((await app.request('/mcp', { method: 'POST', body: JSON.stringify({ method: 'tools/list' }) }, { kv, db })).status, 401);
+    assert.equal(queries.length, 0, 'unauthenticated requests must not query the database');
     assert.deepEqual((await (await request('tools/list')).json()).result.tools.map(t => t.name), ['search_emails']);
     const get = await app.request('/mcp', { headers: { Authorization: `Bearer ${key.fullKey}` } }, { kv, db });
     assert.deepEqual((await get.json()).tools, ['search_emails']);
