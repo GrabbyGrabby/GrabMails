@@ -36,42 +36,72 @@
         <p class="empty-text">No API keys created yet</p>
         <span class="empty-sub">Create your first key to connect Claude Desktop, Cursor, or external scripts.</span>
       </div>
-      <table v-else class="admin-data-table">
-        <thead>
-          <tr>
-            <th>Key Name</th>
-            <th>Key Prefix</th>
-            <th>Authorized tools</th>
-            <th>Created</th>
-            <th>Expires</th>
-            <th class="text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="k in keysList" :key="k.id">
-            <td class="font-medium text-white">{{ k.name }}</td>
-            <td><code>{{ k.prefix || 'gbk_live_...' }}</code></td>
-            <td>
-              <div class="scopes-tags">
-                <span v-for="s in k.scopes" :key="s" class="scope-tag">{{ s }}</span>
-              </div>
-            </td>
-            <td class="text-muted">{{ k.createdAt }}</td>
-            <td class="text-muted">{{ k.expiresAt ? new Date(k.expiresAt).toLocaleDateString() : 'Never' }}</td>
-            <td class="text-right">
-              <el-button size="small" @click="reauthorizeKey(k)">Reauthorize tools</el-button>
-                    <button class="revoke-btn" type="button" @click="revokeKey(k)">
-                <Icon icon="hugeicons:delete-02" width="14" height="14" />
-                <span>Revoke</span>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div v-else class="admin-table-scroll desktop-keys-table">
+        <table class="admin-data-table">
+          <thead>
+            <tr>
+              <th>Key Name</th>
+              <th>Key Prefix</th>
+              <th>Authorized tools</th>
+              <th>Created</th>
+              <th>Expires</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="k in keysList" :key="k.id">
+              <td class="font-medium text-white">{{ k.name }}</td>
+              <td><code>{{ k.prefix || 'gbk_live_...' }}</code></td>
+              <td>
+                <div class="scopes-tags">
+                  <span v-for="s in k.scopes" :key="s" class="scope-tag">{{ s }}</span>
+                </div>
+              </td>
+              <td class="text-muted">{{ k.createdAt }}</td>
+              <td class="text-muted">{{ k.expiresAt ? new Date(k.expiresAt).toLocaleDateString() : 'Never' }}</td>
+              <td class="text-right">
+                <el-button size="small" @click="reauthorizeKey(k)">Reauthorize tools</el-button>
+                <button class="revoke-btn" type="button" @click="revokeKey(k)">
+                  <Icon icon="hugeicons:delete-02" width="14" height="14" />
+                  <span>Revoke</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile Cards Layout -->
+      <div v-if="!loading && keysList.length > 0" class="mobile-keys-cards">
+        <div v-for="k in keysList" :key="k.id" class="mobile-key-card">
+          <el-button size="small" @click="reauthorizeKey(k)">Reauthorize tools</el-button>
+          <div class="m-key-top">
+            <span class="m-key-title">{{ k.name }}</span>
+            <button class="revoke-btn" type="button" @click="revokeKey(k)">
+              <Icon icon="hugeicons:delete-02" width="13" height="13" />
+              <span>Revoke</span>
+            </button>
+          </div>
+          <div class="m-key-row">
+            <span class="m-key-lbl">Prefix</span>
+            <code>{{ k.prefix || 'gbk_live_...' }}</code>
+          </div>
+          <div class="m-key-row scopes">
+            <span class="m-key-lbl">Authorized tools</span>
+            <div class="scopes-tags">
+              <span v-for="s in k.scopes" :key="s" class="scope-tag">{{ s }}</span>
+            </div>
+          </div>
+          <div class="m-key-meta">
+            <span>Created: {{ k.createdAt }}</span>
+            <span>Expires: {{ k.expiresAt ? new Date(k.expiresAt).toLocaleDateString() : 'Never' }}</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Create Modal Dialog -->
-    <el-dialog v-model="showCreateModal" :title="editingKey ? 'Reauthorize MCP tools' : 'Authorize MCP connection'" width="560px" class="dark-dialog">
+    <el-dialog v-model="showCreateModal" :title="editingKey ? 'Reauthorize MCP tools' : 'Authorize MCP connection'" :width="isMobile ? '92vw' : '560px'" class="dark-dialog">
       <div class="dialog-form">
         <div class="form-group">
           <label class="form-label">Key Name</label>
@@ -109,7 +139,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import http from '@/axios/index.js'
 import { MCP_TOOLS } from '@/utils/mcp-tools.js'
@@ -117,6 +147,13 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
 
 const editingKey = ref(null)
+const isMobile = ref(false)
+function checkMobile() {
+  if (typeof window !== 'undefined') {
+    isMobile.value = window.innerWidth <= 768
+  }
+}
+
 
 const keysList = ref([])
 const loading = ref(false)
@@ -131,7 +168,17 @@ const form = reactive({
 })
 
 onMounted(() => {
+  checkMobile()
+  if (typeof window !== 'undefined') {
+    window.addEventListener('resize', checkMobile)
+  }
   loadKeys()
+})
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', checkMobile)
+  }
 })
 
 async function loadKeys() {
@@ -495,5 +542,120 @@ function copyKey(text) {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+.admin-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-keys-cards {
+  display: none;
+}
+
+.mobile-key-card {
+  padding: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.m-key-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.m-key-title {
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 13.5px;
+}
+
+.m-key-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+
+  &.scopes {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+}
+
+.m-key-lbl {
+  color: #71717a;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.m-key-meta {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 11px;
+  color: #71717a;
+}
+
+@media (max-width: 768px) {
+  .panel-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .primary-action-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 16px;
+  }
+
+  .key-display-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .key-secret-text {
+    word-break: break-all;
+    font-size: 12px;
+  }
+
+  .copy-key-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 8px 12px;
+  }
+
+  .desktop-keys-table {
+    display: none !important;
+  }
+
+  .mobile-keys-cards {
+    display: flex !important;
+    flex-direction: column;
+  }
+
+  .keys-table-card {
+    border-radius: 14px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+:deep(.el-dialog) {
+  max-width: min(560px, calc(100vw - 20px)) !important;
+  margin: 20px auto !important;
+  border-radius: 18px !important;
 }
 </style>

@@ -1,37 +1,15 @@
 import { randomBytes } from 'node:crypto';
 import { execSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, copyFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { existsSync, mkdirSync, readdirSync, rmSync, copyFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createRequire } from 'node:module';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const workerDir = resolve(__dirname, '..');
 const repoDir = resolve(workerDir, '..');
 const vueDir = resolve(repoDir, 'mail-vue');
 const distDir = resolve(workerDir, 'dist');
-const distWorkerDir = resolve(workerDir, 'dist-worker');
-const distWorkerEntry = resolve(distWorkerDir, 'index.js');
 const tmpDir = resolve(workerDir, '.bla-tmp');
-
-const require = createRequire(import.meta.url);
-
-function findEsbuild() {
-	try {
-		return require(require.resolve('esbuild', { paths: [workerDir, vueDir, repoDir] }));
-	} catch {
-		const pnpmDir = resolve(workerDir, 'node_modules', '.pnpm');
-		if (existsSync(pnpmDir)) {
-			for (const entry of readdirSync(pnpmDir)) {
-				if (entry.startsWith('esbuild@')) {
-					const cand = resolve(pnpmDir, entry, 'node_modules', 'esbuild', 'lib', 'main.js');
-					if (existsSync(cand)) return require(cand);
-				}
-			}
-		}
-		throw new Error('Could not locate esbuild module in node_modules');
-	}
-}
 
 function hasPnpm() {
 	try {
@@ -55,10 +33,9 @@ if (!existsSync(vueNodeModules) || !hasPnpm()) {
 
 rmSync(tmpDir, { recursive: true, force: true });
 mkdirSync(tmpDir, { recursive: true });
-mkdirSync(distWorkerDir, { recursive: true });
 
 try {
-	console.log('[build-harden] 1/4 Building frontend with Vite...');
+	console.log('[build-harden] 1/2 Building frontend with Vite...');
 	execSync('pnpm --prefix ../mail-vue install --frozen-lockfile && pnpm --prefix ../mail-vue run build', {
 		cwd: workerDir,
 		stdio: 'inherit'
@@ -85,7 +62,7 @@ try {
 
 	const seed = process.env.BLA_SEED || randomBytes(16).toString('hex');
 
-	console.log(`[build-harden] 2/4 Hardening ${firstPartyJs.length} first-party JS chunks + index.html...`);
+	console.log(`[build-harden] 2/2 Hardening ${firstPartyJs.length} first-party JS chunks + index.html...`);
 	execSync(
 		`npx --yes bla-agents@latest harden "${stageDir}" --intensity balanced --allow-lane-independent --seed "${seed}"`,
 		{ cwd: workerDir, stdio: 'inherit' }
@@ -110,30 +87,6 @@ try {
 	copyFileSync(resolve(hardenedFrontendDir, 'index.html'), resolve(distDir, 'index.html'));
 	console.log(`[build-harden] Verified ESM syntax on ${firstPartyJs.length}/${firstPartyJs.length} hardened frontend chunks.`);
 
-	console.log('[build-harden] 3/4 Bundling mail-worker/src into intermediate ESM...');
-	const esbuild = findEsbuild();
-	const workerIntermediate = resolve(tmpDir, 'worker-app.mjs');
-	esbuild.buildSync({
-		entryPoints: [resolve(workerDir, 'src', 'index.js')],
-		bundle: true,
-		format: 'esm',
-		platform: 'neutral',
-		packages: 'external',
-		outfile: workerIntermediate
-	});
-
-	console.log('[build-harden] 4/4 Hardening Worker bundle -> dist-worker/index.js...');
-	execSync(
-		`npx --yes bla-agents@latest defend "${workerIntermediate}" --intensity balanced --allow-lane-independent --no-honey-maps --seed "${seed}" --output "${distWorkerEntry}"`,
-		{ cwd: workerDir, stdio: 'inherit' }
-	);
-
-	checkSyntaxAsEsm(distWorkerEntry, resolve(tmpDir, 'worker-syntax-check.mjs'));
-	const workerSrc = readFileSync(distWorkerEntry, 'utf8');
-	if (!workerSrc.includes('import("cloudflare:email")') && !workerSrc.includes("import('cloudflare:email')")) {
-		throw new Error('Dynamic import("cloudflare:email") was unexpectedly altered in dist-worker/index.js');
-	}
-	console.log('[build-harden] Verified Worker syntax and runtime invariants cleanly.');
 } finally {
 	rmSync(tmpDir, { recursive: true, force: true });
 }

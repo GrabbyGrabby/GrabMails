@@ -106,23 +106,42 @@
           </el-scrollbar>
           <div class="att" v-if="email.attList?.length > 0">
             <div class="att-title">
-              <span>{{$t('attachments')}}</span>
-              <span>{{$t('attCount',{total: email.attList.length})}}</span>
+              <span class="att-title-text">{{$t('attachments')}}</span>
+              <span class="att-count-badge">{{$t('attCount',{total: email.attList.length})}}</span>
             </div>
             <div class="att-box">
-
               <div class="att-item" v-for="att in email.attList" :key="att.attId">
-                <div class="att-icon" @click="showImage(att.key)">
-                  <Icon v-bind="getIconByName(att.filename)" />
+                <div class="att-file-info">
+                  <div class="att-icon" @click="showImage(att.key)">
+                    <Icon v-bind="getIconByName(att.filename)" width="20" height="20" />
+                  </div>
+                  <div class="att-text-block">
+                    <div class="att-name" :title="att.filename" @click="showImage(att.key)">
+                      {{ att.filename }}
+                    </div>
+                    <div class="att-size">{{ formatBytes(att.size) }}</div>
+                  </div>
                 </div>
-                <div class="att-name" @click="showImage(att.key)">
-                  {{ att.filename }}
-                </div>
-                <div class="att-size">{{ formatBytes(att.size) }}</div>
-                <div class="opt-icon att-icon">
-                  <Icon v-if="isImage(att.filename)" icon="hugeicons:view" width="22" height="22" @click="showImage(att.key)"/>
-                  <a :href="cvtR2Url(att.key)" download>
-                    <Icon icon="hugeicons:download" width="20" height="20"/>
+
+                <div class="att-actions">
+                  <button
+                    v-if="isImage(att.filename)"
+                    type="button"
+                    class="att-btn att-preview-btn"
+                    title="Preview image"
+                    @click="showImage(att.key)"
+                  >
+                    <Icon icon="hugeicons:view" width="14" height="14" />
+                    <span>Preview</span>
+                  </button>
+                  <a
+                    :href="cvtR2Url(att.key)"
+                    download
+                    class="att-btn att-download-btn"
+                    title="Download attachment"
+                  >
+                    <Icon icon="hugeicons:download" width="14" height="14" />
+                    <span>Download</span>
                   </a>
                 </div>
               </div>
@@ -564,74 +583,175 @@ const handleDelete = () => {
     flex-direction: column;
 
     .att {
-      margin-top: 30px;
-      margin-bottom: 30px;
+      margin-top: 24px;
+      margin-bottom: 24px;
       border: 1px solid var(--light-border-color);
-      padding: 14px;
-      border-radius: 6px;
+      padding: 16px;
+      border-radius: 12px;
       width: fit-content;
+      max-width: 100%;
+      box-sizing: border-box;
+
       .att-box {
-        min-width: min(410px,calc(100vw - 60px));
-        max-width: 600px;
-        display: grid;
-        gap: 12px;
-        grid-template-rows: 1fr;
+        min-width: min(480px, calc(100vw - 60px));
+        max-width: 680px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
       }
 
       .att-title {
-        margin-bottom: 8px;
+        margin-bottom: 12px;
         display: flex;
         justify-content: space-between;
-        span:first-child {
-          font-weight: bold;
+        align-items: center;
+
+        .att-title-text {
+          font-weight: 600;
+          font-size: 13.5px;
+          color: var(--el-text-color-primary);
+        }
+
+        .att-count-badge {
+          font-size: 11.5px;
+          color: var(--secondary-text-color);
+          background: rgba(140, 140, 140, 0.12);
+          padding: 2px 8px;
+          border-radius: 9999px;
         }
       }
 
       .att-item {
-        cursor: pointer;
-        div {
-          align-self: center;
-        }
         background: var(--light-ill);
-        padding: 5px 7px;
-        border-radius: 4px;
-        align-self: start;
-        display: grid;
-        grid-template-columns: auto 1fr auto auto;
+        padding: 10px 14px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        transition: all 160ms ease;
+        border: 1px solid rgba(140, 140, 140, 0.08);
+
+        .att-file-info {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 0;
+          flex: 1;
+        }
+
         .att-icon {
-          display: grid;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: var(--el-text-color-primary);
+          flex-shrink: 0;
+        }
+
+        .att-text-block {
+          min-width: 0;
+          flex: 1;
         }
 
         .att-size {
           color: var(--secondary-text-color);
+          font-size: 11px;
+          margin-top: 2px;
         }
 
         .att-name {
-          margin-left: 8px;
-          margin-right: 8px;
+          font-weight: 500;
+          font-size: 13px;
+          color: var(--el-text-color-primary);
+          cursor: pointer;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
           word-break: break-all;
+
+          &:hover {
+            text-decoration: underline;
+          }
         }
 
-        .att-image {
-          width: 60px;
-          height: 60px;
-          object-fit: contain;
-        }
-
-        .opt-icon {
-          padding-left: 10px;
-          color: var(--secondary-text-color);
-          align-items: center;
+        .att-actions {
           display: flex;
+          align-items: center;
           gap: 8px;
+          flex-shrink: 0;
+        }
+
+        .att-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 6px 14px;
+          border-radius: 8px;
+          background: #ffffff !important;
+          background-color: #ffffff !important;
+          color: #000000 !important;
+          border: 1px solid #ffffff;
+          font-size: 12px;
+          font-weight: 600;
+          text-decoration: none;
           cursor: pointer;
-          a {
-            color: var(--secondary-text-color);
-            align-items: center;
-            display: flex;
+          white-space: nowrap;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+          transition: all 160ms cubic-bezier(0.16, 1, 0.3, 1);
+
+          &:hover {
+            background: #f4f4f5 !important;
+            background-color: #f4f4f5 !important;
+            color: #000000 !important;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+          }
+
+          &:active {
+            transform: translateY(0);
+          }
+        }
+      }
+
+      /* Mobile responsiveness for email attachments */
+      @media (max-width: 768px) {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-top: 16px !important;
+        margin-bottom: 20px !important;
+        padding: 12px !important;
+
+        .att-box {
+          min-width: 0 !important;
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+
+        .att-item {
+          flex-direction: column !important;
+          align-items: stretch !important;
+          gap: 10px !important;
+          padding: 12px !important;
+
+          .att-file-info {
+            width: 100% !important;
+          }
+
+          .att-name {
+            white-space: normal !important;
+            word-break: break-all !important;
+            line-height: 1.35 !important;
+          }
+
+          .att-actions {
+            width: 100% !important;
+            justify-content: flex-end !important;
+          }
+
+          .att-btn {
+            flex: 1 !important;
+            justify-content: center !important;
           }
         }
       }

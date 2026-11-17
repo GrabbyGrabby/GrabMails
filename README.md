@@ -177,7 +177,7 @@ pnpm exec wrangler deploy
 
 ---
 
-Production uses `mail-worker/src/index.js` as the Wrangler entry point. The build hook builds the frontend into ignored `mail-vue/dist`; missing build dependencies fail the deployment instead of reusing committed assets. CI installs both projects with frozen lockfiles and tests the generated Worker bundle on pull requests before deploying main. The optional `build-harden.mjs` utility is not part of production deployment, and its generated `dist-worker` output is no longer tracked.
+Production uses `mail-worker/src/index.js` as the Wrangler entry point. The build hook builds the frontend into ignored `mail-vue/dist`; missing build dependencies fail the deployment instead of reusing committed assets. CI installs both projects with frozen lockfiles and tests the generated Worker bundle on pull requests before deploying main. The optional `build-harden.mjs` utility only hardens frontend assets and is not part of production deployment. Worker bundles are no longer tracked.
 
 ## License
 MIT &copy; GrabMails

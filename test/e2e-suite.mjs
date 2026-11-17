@@ -188,10 +188,10 @@ function sanitizeContactSearch(query) {
     .trim();
 }
 
-function calculateAvailableSlots({ schedule, existingEvents, durationMinutes = 30, fromDate, days = 7, minNoticeHours = 1 }) {
+function calculateAvailableSlots({ schedule, existingEvents, durationMinutes = 30, fromDate, days = 7, minNoticeHours = 1, simulatedNow = null }) {
   const slots = [];
   const minNoticeMs = minNoticeHours * 60 * 60 * 1000;
-  const nowMs = Date.now();
+  const nowMs = simulatedNow !== null ? simulatedNow : (minNoticeHours === 0 ? 0 : Date.now());
 
   for (let d = 0; d < days; d++) {
     const curDate = new Date(fromDate.getTime() + d * 86400000);

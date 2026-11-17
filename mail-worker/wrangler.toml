@@ -1,4 +1,5 @@
 name = "grabby-mail"
+# Compile reviewed source on every deployment; never deploy a checked-in bundle.
 main = "src/index.js"
 compatibility_date = "2025-06-04"
 keep_vars = true
