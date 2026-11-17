@@ -11,12 +11,12 @@
             <div>
               <h1 class="page-title">{{ $t('apiKeys') || 'API Keys & MCP Access' }}</h1>
               <p class="page-sub">
-                Generate scoped access tokens to connect Claude Desktop, Cursor, or external tools over the Model Context Protocol (MCP).
+                Choose the exact tools each MCP agent can use. Existing unscoped keys must be replaced. Adding tools requires reauthorization and a new key.
               </p>
             </div>
           </div>
           <div class="header-actions">
-            <button class="primary-action-btn" type="button" @click="showCreateModal = true">
+            <button class="primary-action-btn" type="button" @click="openCreate">
               <Icon icon="hugeicons:plus-sign" width="16" height="16" />
               <span>Create New Key</span>
             </button>
@@ -127,9 +127,9 @@
                 <tr>
                   <th>Key Name</th>
                   <th>Key Token</th>
-                  <th>Granted Scopes</th>
+                  <th>Authorized tools</th>
                   <th>Created</th>
-                  <th>Last Used</th>
+                  <th>Expires</th>
                   <th class="text-right">Actions</th>
                 </tr>
               </thead>
@@ -147,8 +147,9 @@
                     </div>
                   </td>
                   <td class="text-muted">{{ k.createdAt }}</td>
-                  <td class="text-muted">{{ k.lastUsedAt || 'Never' }}</td>
+                  <td class="text-muted">{{ k.expiresAt ? new Date(k.expiresAt).toLocaleDateString() : 'Never' }}</td>
                   <td class="text-right">
+                    <el-button size="small" @click="reauthorizeKey(k)">Reauthorize tools</el-button>
                     <button class="revoke-btn" type="button" @click="revokeKey(k)">
                       <Icon icon="hugeicons:delete-02" width="14" height="14" />
                       <span>Revoke</span>
@@ -162,6 +163,7 @@
           <!-- Mobile Cards Layout (Zero stretch, 100% accessible on phones) -->
           <div v-if="!loading && keysList.length > 0" class="mobile-keys-cards">
             <div v-for="k in keysList" :key="k.id" class="mobile-key-card">
+              <el-button size="small" @click="reauthorizeKey(k)">Reauthorize tools</el-button>
               <div class="mobile-key-top">
                 <div class="mobile-key-title-wrap">
                   <Icon icon="hugeicons:key-01" width="16" height="16" class="mobile-key-icon" />
@@ -179,7 +181,7 @@
               </div>
 
               <div class="mobile-key-row scopes-row">
-                <span class="mobile-key-label">Scopes</span>
+                <span class="mobile-key-label">Authorized tools</span>
                 <div class="scopes-cluster">
                   <span v-for="s in k.scopes" :key="s" class="scope-chip">{{ s }}</span>
                 </div>
@@ -191,8 +193,8 @@
                   <span class="meta-value">{{ k.createdAt }}</span>
                 </div>
                 <div class="meta-col">
-                  <span class="meta-label">Last Used</span>
-                  <span class="meta-value">{{ k.lastUsedAt || 'Never' }}</span>
+                  <span class="meta-label">Expires</span>
+                  <span class="meta-value">{{ k.expiresAt ? new Date(k.expiresAt).toLocaleDateString() : 'Never' }}</span>
                 </div>
               </div>
             </div>
@@ -204,7 +206,7 @@
     <!-- Create Key Modal Dialog -->
     <el-dialog
       v-model="showCreateModal"
-      title="Create New API Key"
+      :title="editingKey ? 'Reauthorize MCP tools' : 'Authorize MCP connection'"
       :width="isMobile ? '92vw' : '560px'"
       class="dark-dialog"
       :append-to-body="true"
@@ -226,31 +228,10 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Permissions &amp; Scopes</label>
+          <label class="form-label">Tools this agent may use</label>
           <div class="scopes-checkbox-group">
-            <el-checkbox v-model="form.scopes" label="mcp:read">
-              <span class="scope-row">
-                <strong class="scope-code">mcp:read</strong>
-                <span class="scope-desc"> — Read mailboxes, search emails &amp; message threads</span>
-              </span>
-            </el-checkbox>
-            <el-checkbox v-model="form.scopes" label="mcp:draft">
-              <span class="scope-row">
-                <strong class="scope-code">mcp:draft</strong>
-                <span class="scope-desc"> — Generate reply drafts &amp; compose assistance</span>
-              </span>
-            </el-checkbox>
-            <el-checkbox v-model="form.scopes" label="mcp:calendar">
-              <span class="scope-row">
-                <strong class="scope-code">mcp:calendar</strong>
-                <span class="scope-desc"> — Query events &amp; schedule calendar bookings</span>
-              </span>
-            </el-checkbox>
-            <el-checkbox v-model="form.scopes" label="email:send">
-              <span class="scope-row">
-                <strong class="scope-code">email:send</strong>
-                <span class="scope-desc"> — Send outgoing messages directly via SES/Resend</span>
-              </span>
+            <el-checkbox v-for="tool in MCP_TOOLS" :key="tool.name" v-model="form.scopes" :label="tool.name">
+              <span class="scope-row"><strong class="scope-code">{{ tool.name }}</strong><span class="scope-desc"> — {{ tool.description }}</span></span>
             </el-checkbox>
           </div>
         </div>
@@ -260,7 +241,7 @@
         <div class="dialog-actions">
           <el-button @click="showCreateModal = false">Cancel</el-button>
           <el-button type="primary" :loading="creating" @click="submitCreateKey">
-            Generate Key
+            Authorize selected tools
           </el-button>
         </div>
       </template>
@@ -271,10 +252,12 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
-import axios from 'axios'
+import http from '@/axios/index.js'
+import { MCP_TOOLS } from '@/utils/mcp-tools.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
 
+const editingKey = ref(null)
 const isMobile = ref(false)
 function checkMobile() {
   if (typeof window !== 'undefined') {
@@ -282,7 +265,6 @@ function checkMobile() {
   }
 }
 
-const STORAGE_KEY = 'grabmails_user_api_keys'
 
 const mcpEndpointUrl = computed(() => {
   const origin = window.location.origin
@@ -300,11 +282,11 @@ const copied = ref(false)
 const form = reactive({
   name: '',
   expiration: '90d',
-  scopes: ['mcp:read', 'mcp:draft', 'mcp:calendar']
+  scopes: []
 })
 
 const claudeDesktopConfig = computed(() => {
-  const sampleKey = newlyIssuedKey.value?.fullKey || (keysList.value[0]?.prefix ? `${keysList.value[0].prefix}...` : 'gmk_live_your_api_key_here')
+  const sampleKey = newlyIssuedKey.value?.fullKey || 'YOUR_AUTHORIZED_MCP_KEY'
   return JSON.stringify({
     mcpServers: {
       grabmails: {
@@ -324,7 +306,7 @@ const claudeDesktopConfig = computed(() => {
 })
 
 const cursorMcpConfig = computed(() => {
-  const sampleKey = newlyIssuedKey.value?.fullKey || (keysList.value[0]?.prefix ? `${keysList.value[0].prefix}...` : 'gmk_live_your_api_key_here')
+  const sampleKey = newlyIssuedKey.value?.fullKey || 'YOUR_AUTHORIZED_MCP_KEY'
   return JSON.stringify({
     mcpServers: {
       grabmails: {
@@ -353,115 +335,61 @@ onUnmounted(() => {
 
 async function loadKeys() {
   loading.value = true
-  try {
-    const res = await axios.get('/admin/api-keys')
-    if (res?.data?.data && Array.isArray(res.data.data)) {
-      keysList.value = res.data.data
-      saveToStorage()
-      loading.value = false
-      return
-    }
-  } catch (e) {}
-
-  // Fallback to local persistence
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      keysList.value = JSON.parse(raw)
-    } else {
-      keysList.value = [
-        {
-          id: 'key-default-mcp',
-          name: 'Claude Desktop MCP Key',
-          prefix: 'gmk_live_9a7b4f...',
-          scopes: ['mcp:read', 'mcp:draft', 'mcp:calendar'],
-          createdAt: dayjs().subtract(1, 'day').format('YYYY-MM-DD HH:mm'),
-          lastUsedAt: '5 minutes ago'
-        }
-      ]
-      saveToStorage()
-    }
-  } catch (e) {}
-  loading.value = false
+  try { keysList.value = await http.get('/admin/api-keys') }
+  catch (error) { ElMessage.error('Could not load authorized connections. Please retry.') }
+  finally { loading.value = false }
 }
 
-function saveToStorage() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(keysList.value))
-  } catch (e) {}
+function openCreate() {
+  editingKey.value = null
+  form.name = ''
+  form.expiration = '90d'
+  form.scopes = []
+  showCreateModal.value = true
+}
+
+function reauthorizeKey(key) {
+  editingKey.value = key.id
+  form.name = key.name
+  form.expiration = key.expiration || '90d'
+  form.scopes = [...key.scopes]
+  showCreateModal.value = true
 }
 
 async function submitCreateKey() {
-  if (!form.name.trim()) {
-    ElMessage.error('Please enter a key name')
+  if (!form.name.trim() || !form.scopes.length) {
+    ElMessage.error('Enter a connection name and select at least one tool.')
     return
   }
-
-  creating.value = true
-  try {
-    let newKey = null
-    try {
-      const res = await axios.post('/admin/api-keys', {
-        name: form.name.trim(),
-        scopes: form.scopes
-      })
-      if (res?.data?.data?.fullKey) {
-        newKey = res.data.data
-      }
-    } catch (e) {}
-
-    if (!newKey) {
-      // Local cryptographic key generation
-      const randomBytes = new Uint8Array(24)
-      crypto.getRandomValues(randomBytes)
-      const randomHex = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('')
-      const fullToken = `gmk_live_${randomHex}`
-      const prefix = `${fullToken.slice(0, 16)}...`
-
-      newKey = {
-        id: `key_${Date.now()}`,
-        name: form.name.trim(),
-        prefix,
-        fullKey: fullToken,
-        scopes: [...form.scopes],
-        createdAt: dayjs().format('YYYY-MM-DD HH:mm'),
-        lastUsedAt: 'Never'
-      }
-    }
-
-    keysList.value.unshift(newKey)
-    saveToStorage()
-    newlyIssuedKey.value = newKey
-    showCreateModal.value = false
-    form.name = ''
-    ElMessage.success('API Key created successfully!')
-  } catch (err) {
-    ElMessage.error(err.message || 'Failed to create key')
-  } finally {
-    creating.value = false
-  }
-}
-
-async function revokeKey(keyItem) {
   try {
     await ElMessageBox.confirm(
-      `Are you sure you want to revoke API key "${keyItem.name}"? Applications using this key will immediately lose access.`,
-      'Revoke API Key',
-      {
-        confirmButtonText: 'Revoke Key',
-        cancelButtonText: 'Cancel',
-        type: 'warning'
-      }
+      `Authorize "${form.name.trim()}" to use: ${form.scopes.join(', ')}?` +
+      (editingKey.value ? ' This replaces the existing key. Update your agent with the new key.' : ''),
+      'Authorize selected MCP tools', { confirmButtonText: 'Authorize', cancelButtonText: 'Cancel' }
     )
+  } catch { return }
+  creating.value = true
+  try {
+    newlyIssuedKey.value = await http.post(editingKey.value ? `/admin/api-keys/${editingKey.value}/reauthorize` : '/admin/api-keys', {
+      name: form.name.trim(), scopes: [...form.scopes], expiration: form.expiration, confirmAuthorization: true
+    })
+    showCreateModal.value = false
+    await loadKeys()
+    ElMessage.success('Selected tools authorized. Copy the new key into your agent.')
+  } catch (error) { ElMessage.error(error.message || 'Authorization failed. Please retry.') }
+  finally { creating.value = false }
+}
 
-    try {
-      await axios.delete(`/admin/api-keys/${keyItem.id}`)
-    } catch (e) {}
-
-    keysList.value = keysList.value.filter(k => k.id !== keyItem.id)
-    saveToStorage()
-    ElMessage.success('Key revoked successfully')
-  } catch (e) {}
+async function revokeKey(key) {
+  try {
+    await ElMessageBox.confirm(`Revoke "${key.name}"? Its agent will lose access.`, 'Revoke connection', { confirmButtonText: 'Revoke', cancelButtonText: 'Cancel' })
+  } catch { return }
+  try {
+    await http.delete(`/admin/api-keys/${key.id}`)
+    if (newlyIssuedKey.value?.id === key.id) newlyIssuedKey.value = null
+    await loadKeys()
+    ElMessage.success('Connection revoked')
+  } catch (error) { ElMessage.error('Revocation failed. Please retry.') }
 }
 
 function copyKey(str) {
@@ -476,6 +404,9 @@ function copyKey(str) {
 </script>
 
 <style scoped>
+:deep(.el-checkbox) { height: auto; padding: 8px 0; align-items: flex-start; }
+:deep(.el-checkbox__label) { white-space: normal; line-height: 1.5; }
+
 .api-keys-page {
   height: 100%;
   min-height: 0;

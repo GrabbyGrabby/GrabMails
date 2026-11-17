@@ -1,3 +1,4 @@
+import { isStrongPassword } from '../utils/password-policy.js';
 import BizError from '../error/biz-error';
 import orm from '../entity/orm';
 import { v4 as uuidv4 } from 'uuid';
@@ -122,9 +123,11 @@ const publicService = {
 				throw new BizError(t('notEmailDomain'));
 			}
 
-			const { salt, hash } = await saltHashUtils.hashPassword(
-				emailRow.password || cryptoUtils.genRandomPwd()
-			);
+			const password = emailRow.password || cryptoUtils.genRandomPwd();
+			if (!isStrongPassword(password)) {
+				throw new BizError(t('pwdMinLength'));
+			}
+			const { salt, hash } = await saltHashUtils.hashPassword(password);
 
 			emailRow.salt = salt;
 			emailRow.hash = hash;

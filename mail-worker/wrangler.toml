@@ -1,5 +1,6 @@
 name = "grabby-mail"
-main = "dist-worker/index.js"
+# Compile reviewed source on every deployment; never deploy a checked-in bundle.
+main = "src/index.js"
 compatibility_date = "2025-06-04"
 keep_vars = true
 
@@ -20,7 +21,7 @@ binding = "ai"
 
 [assets]
 binding = "assets"
-directory = "./dist"
+directory = "../mail-vue/dist"
 not_found_handling = "single-page-application"
 run_worker_first = true
 
@@ -39,4 +40,4 @@ DEFAULT_SEND_BALANCE = "50"
 DEFAULT_ACCOUNT_LIMIT = "10"
 
 [build]
-command = "node scripts/build-harden.mjs"
+command = "pnpm --dir ../mail-vue run build --outDir dist"

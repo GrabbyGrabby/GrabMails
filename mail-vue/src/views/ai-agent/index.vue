@@ -350,7 +350,7 @@
             <!-- Supported Tools Catalog -->
             <div class="mcp-tools-section">
               <h3 class="mcp-section-title">Available MCP Tools</h3>
-              <p class="mcp-section-sub">These tools are automatically registered and discoverable by any MCP-compatible AI client</p>
+              <p class="mcp-section-sub">Choose tools in API Keys before connecting. Your agent discovers only its authorized tools. Adding tools requires reauthorization and a replacement key.</p>
 
               <div class="tools-grid">
                 <div v-for="t in mcpTools" :key="t.name" class="tool-card">
@@ -369,6 +369,7 @@
 
             <!-- Interactive MCP Test Runner -->
             <div class="mcp-test-runner">
+              <el-input v-model="mcpTestKey" type="password" show-password placeholder="Paste the authorized MCP key to test" autocomplete="off" />
               <div class="test-header">
                 <div>
                   <h4 class="test-title">Live MCP Protocol Test</h4>
@@ -777,42 +778,43 @@ const currentClient = computed(() => {
 const mcpTools = [
   {
     name: 'search_emails',
-    scope: 'mcp:read',
+    scope: 'search_emails',
     desc: 'Search email subject, sender, and content across all user mailboxes with pagination.',
     params: '{ query: string, folder?: "inbox" | "sent" | "draft" | "trash", limit?: number }'
   },
   {
     name: 'get_thread',
-    scope: 'mcp:read',
+    scope: 'get_thread',
     desc: 'Read the recent conversation thread containing an email before drafting a reply.',
     params: '{ emailId: string }'
   },
   {
     name: 'draft_reply',
-    scope: 'mcp:draft',
+    scope: 'draft_reply',
     desc: 'Save a reply draft with recipients and threading derived from the source email without sending.',
     params: '{ emailId: string, body: string, replyAll?: boolean }'
   },
   {
     name: 'list_events',
-    scope: 'mcp:calendar',
+    scope: 'list_events',
     desc: 'Retrieve upcoming calendar appointments, meetings, and events within a time range.',
     params: '{ startsAfter?: string, endsBefore?: string, limit?: number }'
   },
   {
     name: 'create_event',
-    scope: 'mcp:calendar',
+    scope: 'create_event',
     desc: 'Schedule a new calendar event with title, start/end timestamps, location, and description.',
     params: '{ title: string, startsAt: string, endsAt: string, location?: string }'
   },
   {
     name: 'list_mailboxes',
-    scope: 'mcp:read',
+    scope: 'list_mailboxes',
     desc: 'List all custom domain mailboxes and personal aliases accessible by the user.',
     params: '{}'
   }
 ]
 
+const mcpTestKey = ref('')
 const mcpTesting = ref(false)
 const mcpTestOutput = ref('')
 
@@ -820,27 +822,14 @@ async function runMcpSelfTest() {
   mcpTesting.value = true
   mcpTestOutput.value = 'Connecting to ' + mcpEndpointUrl.value + '...'
   try {
-    const resp = await axios.post('/mcp', {
-      jsonrpc: '2.0',
-      id: 'test-1',
-      method: 'tools/list',
-      params: {}
-    }).catch(err => {
-      // Mock protocol response if worker route is pending
-      return {
-        data: {
-          jsonrpc: '2.0',
-          id: 'test-1',
-          result: {
-            tools: mcpTools.map(t => ({
-              name: t.name,
-              description: t.desc,
-              inputSchema: { type: 'object', properties: {} }
-            }))
-          }
-        }
-      }
+    const response = await fetch(mcpEndpointUrl.value, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${mcpTestKey.value}` },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 'test-1', method: 'tools/list', params: {} })
     })
+    const data = await response.json()
+    if (!response.ok || data.error) throw new Error(data.error?.message || data.error || 'MCP request failed')
+    const resp = { data }
 
     mcpTestOutput.value = JSON.stringify(resp.data, null, 2)
     ElMessage.success('MCP server returned tools successfully!')

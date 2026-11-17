@@ -35,7 +35,7 @@ const en = {
 	emailLengthLimit: 'Email length exceeds the limit',
 	minEmailPrefix: 'Email must be at least {{msg}} characters',
 	banEmailPrefix: 'Invalid characters in email address',
-	pwdMinLength: 'Password must be at least 6 characters',
+	pwdMinLength: 'Password must be at least 8 characters and include at least one number and one special character (e.g. !, @, #)',
 	notEmailDomain: 'Invalid email domain',
 	emptyRegKey: 'Invite code cannot be empty',
 	notExistRegKey: 'Invite code does not exist',

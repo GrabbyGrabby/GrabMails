@@ -84,6 +84,16 @@ GrabMails exposes a Model Context Protocol endpoint at `/mcp` supporting tools:
 - `create_event`: Schedule calendar appointments with timestamps and locations.
 - `list_mailboxes`: Enumerate accessible custom domain mailboxes and personal aliases.
 
+### Authorize a connection
+
+Open **API Keys**, give each agent its own connection name, and select the individual tools it needs. No tools are selected by default. Confirm the selection and copy the server-issued key into the client's `Authorization: Bearer …` header. Keys are shown only when issued; the server stores their hashes. Expiration is enforced.
+
+The MCP server requires this key for discovery and calls. `tools/list` exposes only the approved tools, and calls to any other tool are rejected. To add or remove tools, choose **Reauthorize tools**, review the selection, and confirm it. This replaces the credential: copy the new key into your agent. Agents cannot change their own permissions. Revoke unused connections from the same screen.
+
+Existing unscoped keys (including old locally generated keys) are not accepted. Create a new connection with explicit tool selections. Key metadata and permissions are stored in Cloudflare KV; changes and revocations may take time to propagate between regions. A previous key never receives the expanded permissions of its replacement.
+
+The authorization layer covers the existing six MCP tools. Some existing tool handlers still return placeholder results; authorization does not implement those tool operations.
+
 ### Configuration Snippets
 
 #### Claude Desktop (`claude_desktop_config.json`)
@@ -130,7 +140,8 @@ claude mcp add grabmails -- https://grabby-mail.grabbymark.workers.dev/mcp
 
 ### 1. Install Dependencies
 ```bash
-pnpm install
+pnpm --dir mail-vue install --frozen-lockfile
+pnpm --dir mail-worker install --frozen-lockfile
 ```
 
 ### 2. Configure Cloudflare Resources (`mail-worker/wrangler.toml`)
@@ -154,15 +165,34 @@ binding = "ai"
 
 ### 3. Build & Deploy
 ```bash
-# Build Vue frontend
-pnpm --prefix mail-vue run build
-
-# Deploy Cloudflare Worker & Static Assets
+# Build and verify the production bundle from current source
 cd mail-worker
+pnpm run test:unit
+pnpm exec wrangler deploy --dry-run --outdir .wrangler/deploy-check
+node --test test/deployment/*.test.mjs
+
+# Deploy Cloudflare Worker & freshly built static assets
 pnpm exec wrangler deploy
 ```
 
 ---
 
+Production uses `mail-worker/src/index.js` as the Wrangler entry point. The build hook builds the frontend into ignored `mail-vue/dist`; missing build dependencies fail the deployment instead of reusing committed assets. CI installs both projects with frozen lockfiles and tests the generated Worker bundle on pull requests before deploying main. The optional `build-harden.mjs` utility only hardens frontend assets and is not part of production deployment. Worker bundles are no longer tracked.
+
 ## License
 MIT &copy; GrabMails
+
+
+## Release versions
+
+| Version | Update | Source commit |
+| --- | --- | --- |
+| v1.0.0 | Baseline before this round of updates | `5489bb1` |
+| v1.1.0 | Stronger password requirements | `8488b97` |
+| v1.2.0 | Explicit MCP tool authorization | `bd3618e` |
+
+Once `.github/workflows/releases.yml` is merged into `main`, each new main-branch update creates the next minor version (`v1.3.0`, `v1.4.0`, …) and a GitHub Release with generated notes. The initial run also publishes any missing release pages for the historical tags above. The MCP update must be included in main before releasing subsequent versions. Tags identify exact source commits and are never moved or overwritten.
+
+Merge each logical update through a PR to keep its version and release notes clear. The release workflow runs independently of Cloudflare deployment: a source release is not proof of a successful deployment. It can be rerun manually after a publication failure; rerunning the same commit reuses its version. GitHub Actions needs permission to write repository contents. No additional deployment credentials are needed for releases.
+
+Validate release automation locally with `python3 -m unittest discover -s tests -p test_release.py`.

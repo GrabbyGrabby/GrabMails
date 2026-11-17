@@ -29,3 +29,6 @@ mail-vue/node_modules
 .bla-tmp
 .venv
 git-tools.js
+
+# Legacy optional hardening output; production builds from src/index.js.
+mail-worker/dist-worker/
