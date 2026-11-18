@@ -207,35 +207,87 @@
             <p class="empty-desc">Attachments sent or received in emails will appear here automatically.</p>
           </div>
 
-          <div v-else class="attachments-table-wrap">
-            <el-table :data="emailAttachments" style="width: 100%" class="attachments-table">
-              <el-table-column label="File Name" min-width="220">
-                <template #default="{ row }">
-                  <div class="table-file-cell">
-                    <Icon :icon="getFileIcon(row.name)" width="20" height="20" class="mr-2" />
-                    <span class="file-table-name" :title="row.name">{{ row.name }}</span>
+          <div v-else class="attachments-content-wrap">
+            <!-- Desktop Table View -->
+            <div class="attachments-table-wrap desktop-attachments-table">
+              <el-table :data="emailAttachments" style="width: 100%" class="attachments-table">
+                <el-table-column label="File Name" min-width="220">
+                  <template #default="{ row }">
+                    <div class="table-file-cell">
+                      <Icon :icon="getFileIcon(row.name)" width="20" height="20" class="mr-2" />
+                      <span class="file-table-name" :title="row.name">{{ row.name }}</span>
+                    </div>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="emailSubject" label="Email Subject" min-width="200" />
+                <el-table-column prop="sender" label="From / To" min-width="160" />
+                <el-table-column label="Size" width="110">
+                  <template #default="{ row }">
+                    {{ formatSize(row.size) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="Date" width="120">
+                  <template #default="{ row }">
+                    {{ formatDate(row.created_at) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="Actions" width="200" align="right">
+                  <template #default="{ row }">
+                    <div class="att-table-actions">
+                      <button type="button" class="att-theme-btn" @click="previewFile(row)">
+                        <Icon icon="hugeicons:view" width="14" height="14" />
+                        <span>Preview</span>
+                      </button>
+                      <button type="button" class="att-theme-btn" @click="downloadFile(row)">
+                        <Icon icon="hugeicons:download-04" width="14" height="14" />
+                        <span>Download</span>
+                      </button>
+                    </div>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+
+            <!-- Mobile Card List View (100% visible, zero horizontal cutoff) -->
+            <div class="mobile-attachments-list">
+              <div v-for="row in emailAttachments" :key="row.id" class="mobile-att-card">
+                <div class="m-att-header">
+                  <div class="m-att-icon-wrap" :style="{ backgroundColor: getFileBg(row.name) }">
+                    <Icon :icon="getFileIcon(row.name)" width="20" height="20" />
                   </div>
-                </template>
-              </el-table-column>
-              <el-table-column prop="emailSubject" label="Email Subject" min-width="200" />
-              <el-table-column prop="sender" label="From / To" min-width="160" />
-              <el-table-column label="Size" width="110">
-                <template #default="{ row }">
-                  {{ formatSize(row.size) }}
-                </template>
-              </el-table-column>
-              <el-table-column label="Date" width="120">
-                <template #default="{ row }">
-                  {{ formatDate(row.created_at) }}
-                </template>
-              </el-table-column>
-              <el-table-column label="Actions" width="150" align="right">
-                <template #default="{ row }">
-                  <el-button size="small" text type="primary" @click="previewFile(row)">Preview</el-button>
-                  <el-button size="small" text @click="downloadFile(row)">Download</el-button>
-                </template>
-              </el-table-column>
-            </el-table>
+                  <div class="m-att-title-col">
+                    <div class="m-att-filename" :title="row.name">{{ row.name }}</div>
+                    <div class="m-att-meta-row">
+                      <span>{{ formatSize(row.size) }}</span>
+                      <span>&bull;</span>
+                      <span>{{ formatDate(row.created_at) }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="m-att-email-info">
+                  <div v-if="row.emailSubject" class="m-att-subject">
+                    <Icon icon="hugeicons:mail-01" width="13" height="13" class="m-att-meta-icon" />
+                    <span>{{ row.emailSubject }}</span>
+                  </div>
+                  <div v-if="row.sender" class="m-att-sender">
+                    <Icon icon="hugeicons:user" width="13" height="13" class="m-att-meta-icon" />
+                    <span>{{ row.sender }}</span>
+                  </div>
+                </div>
+
+                <div class="m-att-actions">
+                  <button type="button" class="att-theme-btn" @click="previewFile(row)">
+                    <Icon icon="hugeicons:view" width="14" height="14" />
+                    <span>Preview</span>
+                  </button>
+                  <button type="button" class="att-theme-btn" @click="downloadFile(row)">
+                    <Icon icon="hugeicons:download-04" width="14" height="14" />
+                    <span>Download</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1129,6 +1181,181 @@ function formatDate(d) {
   overflow: hidden;
 }
 
+.att-table-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Preview & Download Buttons: White bg + Black text in Light Mode, Black bg + White text in Dark Mode */
+.att-theme-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #d4d4d8 !important;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  transition: all 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.att-theme-btn:hover {
+  background: #f4f4f5 !important;
+  background-color: #f4f4f5 !important;
+  color: #000000 !important;
+  border-color: #a1a1aa !important;
+  transform: translateY(-1px);
+}
+
+:root.dark .att-theme-btn,
+.dark .att-theme-btn,
+[data-theme="dark"] .att-theme-btn {
+  background: #000000 !important;
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+:root.dark .att-theme-btn:hover,
+.dark .att-theme-btn:hover,
+[data-theme="dark"] .att-theme-btn:hover {
+  background: #18181b !important;
+  background-color: #18181b !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* Mobile Attachments Cards (hidden on desktop) */
+.mobile-attachments-list {
+  display: none;
+}
+
+.mobile-att-card {
+  background: var(--el-bg-color, #ffffff);
+  border: 1px solid var(--el-border-color-lighter, #e2e8f0);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.dark .mobile-att-card,
+[data-theme="dark"] .mobile-att-card {
+  background: #111317;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.m-att-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.m-att-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--el-text-color-primary, #0f172a);
+}
+
+.m-att-title-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.m-att-filename {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--el-text-color-primary, #0f172a);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.m-att-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--el-text-color-secondary, #64748b);
+}
+
+.m-att-email-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--el-fill-color-light, #f8fafc);
+  font-size: 12px;
+  color: var(--el-text-color-secondary, #64748b);
+}
+
+.dark .m-att-email-info,
+[data-theme="dark"] .m-att-email-info {
+  background: rgba(255, 255, 255, 0.04);
+  color: #a1a1aa;
+}
+
+.m-att-subject,
+.m-att-sender {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.m-att-subject {
+  color: var(--el-text-color-primary, #0f172a);
+  font-weight: 500;
+}
+
+.dark .m-att-subject,
+[data-theme="dark"] .m-att-subject {
+  color: #e4e4e7;
+}
+
+.m-att-meta-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.m-att-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.m-att-actions .att-theme-btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 12.5px;
+}
+
 .table-file-cell {
   display: flex;
   align-items: center;
@@ -1271,7 +1498,11 @@ function formatDate(d) {
   }
 
   .drive-main {
-    padding: 12px;
+    padding: 12px 12px 110px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex: 1;
+    min-height: 0;
   }
 
   .folders-grid {
@@ -1322,8 +1553,16 @@ function formatDate(d) {
     padding: 4px;
   }
 
-  .attachments-table-wrap {
-    overflow-x: auto;
+  .desktop-attachments-table {
+    display: none !important;
+  }
+
+  .mobile-attachments-list {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    padding-bottom: 16px;
   }
 }
 

@@ -691,21 +691,22 @@ const handleDelete = () => {
           background: #ffffff !important;
           background-color: #ffffff !important;
           color: #000000 !important;
-          border: 1px solid #ffffff;
+          border: 1px solid #d4d4d8 !important;
           font-size: 12px;
           font-weight: 600;
           text-decoration: none;
           cursor: pointer;
           white-space: nowrap;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
           transition: all 160ms cubic-bezier(0.16, 1, 0.3, 1);
 
           &:hover {
             background: #f4f4f5 !important;
             background-color: #f4f4f5 !important;
             color: #000000 !important;
+            border-color: #a1a1aa !important;
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
           }
 
           &:active {
@@ -719,7 +720,7 @@ const handleDelete = () => {
         width: 100% !important;
         max-width: 100% !important;
         margin-top: 16px !important;
-        margin-bottom: 20px !important;
+        margin-bottom: 100px !important;
         padding: 12px !important;
 
         .att-box {
@@ -976,6 +977,23 @@ const handleDelete = () => {
     background: #1f2228;
     color: #f3f4f6;
     border-color: rgba(245, 158, 11, 0.4);
+  }
+}
+
+:root.dark .container .content .att .att-item .att-btn,
+.dark .container .content .att .att-item .att-btn,
+[data-theme="dark"] .container .content .att .att-item .att-btn {
+  background: #000000 !important;
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+
+  &:hover {
+    background: #18181b !important;
+    background-color: #18181b !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.45) !important;
   }
 }
 </style>

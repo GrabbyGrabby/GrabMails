@@ -222,8 +222,29 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="Location / Video Call">
-          <el-input v-model="form.location" placeholder="e.g. Google Meet or Conference Room" />
+        <el-form-item label="Location / Video Call Link">
+          <div class="location-input-row">
+            <el-input v-model="form.location" placeholder="Paste video link or click Generate Link" />
+            <el-button type="default" class="gen-link-btn" @click="generateEventVideoLink">
+              <Icon icon="hugeicons:video-01" width="14" height="14" class="mr-1" />
+              <span>Generate Link</span>
+            </el-button>
+          </div>
+          <div v-if="detectedMeetingUrl" class="cal-meeting-link-bar">
+            <a :href="detectedMeetingUrl" target="_blank" rel="noopener noreferrer" class="cal-meeting-url">
+              {{ detectedMeetingUrl }}
+            </a>
+            <div class="cal-meeting-bar-actions">
+              <button type="button" class="cal-link-btn" @click="copyEventLink(detectedMeetingUrl)">
+                <Icon icon="hugeicons:copy" width="13" height="13" />
+                <span>Copy</span>
+              </button>
+              <a :href="detectedMeetingUrl" target="_blank" rel="noopener noreferrer" class="cal-link-btn primary">
+                <Icon icon="hugeicons:video-01" width="13" height="13" />
+                <span>Join</span>
+              </a>
+            </div>
+          </div>
         </el-form-item>
 
         <el-form-item label="Description">
@@ -495,13 +516,46 @@ function deleteEvent(ev) {
   }).catch(() => {})
 }
 
+const detectedMeetingUrl = computed(() => {
+  const candidates = [form.value.meetingLink, form.value.location, form.value.description]
+  for (const field of candidates) {
+    if (typeof field !== 'string') continue
+    const match = field.match(/https?:\/\/[^\s<>"']+/i)
+    if (match) return match[0]
+  }
+  return ''
+})
+
+function generateEventVideoLink() {
+  const bytes = new Uint8Array(6)
+  crypto.getRandomValues(bytes)
+  const roomCode = Array.from(bytes, b => b.toString(36).padStart(2, '0')).join('').slice(0, 10)
+  const link = `https://meet.jit.si/GrabMails-${roomCode}`
+  form.value.location = link
+  form.value.meetingLink = link
+  ElMessage.success('Video meeting link generated!')
+}
+
+async function copyEventLink(url) {
+  if (!url) return
+  try {
+    await navigator.clipboard.writeText(url)
+    ElMessage.success('Meeting link copied!')
+  } catch (e) {
+    ElMessage.error('Failed to copy link')
+  }
+}
+
 function sendInviteEmail(ev) {
   dialogVisible.value = false
-  const summary = `Meeting Invitation: ${ev.title}\nWhen: ${dayjs(ev.starts_at).format('MMM D, YYYY h:mm A')} - ${dayjs(ev.ends_at).format('h:mm A')}\nLocation: ${ev.location || 'Online'}\n\n${ev.description || ''}`
+  const link = ev.meetingLink || (typeof ev.location === 'string' && ev.location.match(/https?:\/\/[^\s<>"']+/i)?.[0]) || ''
+  const linkHtml = link ? `<p><strong>Join Video Call:</strong> <a href="${link}" target="_blank">${link}</a></p>` : ''
   if (uiStore.writerRef && typeof uiStore.writerRef.open === 'function') {
     uiStore.writerRef.open({
+      receiveEmail: ev.guestEmail ? [ev.guestEmail] : undefined,
+      subject: `Invitation: ${ev.title}`,
       title: `Invitation: ${ev.title}`,
-      content: `<p>You're invited to <strong>${ev.title}</strong></p><p><strong>When:</strong> ${dayjs(ev.starts_at).format('MMM D, YYYY h:mm A')} - ${dayjs(ev.ends_at).format('h:mm A')}</p><p><strong>Location:</strong> ${ev.location || 'Online'}</p><p>${ev.description || ''}</p>`
+      content: `<p>You're invited to <strong>${ev.title}</strong></p><p><strong>When:</strong> ${dayjs(ev.starts_at).format('MMM D, YYYY h:mm A')} - ${dayjs(ev.ends_at).format('h:mm A')}</p><p><strong>Location:</strong> ${ev.location || 'Online'}</p>${linkHtml}<p>${(ev.description || '').replace(/\n/g, '<br/>')}</p>`
     })
   } else {
     ElMessage.info('Composer opened with event invite details')
@@ -1107,5 +1161,99 @@ function getDayEventStyle(ev) {
     width: 100%;
     justify-content: flex-end;
   }
+
+  .location-input-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cal-meeting-link-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.location-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.gen-link-btn {
+  flex-shrink: 0;
+}
+
+.cal-meeting-link-bar {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--el-fill-color-light, #f8fafc);
+  border: 1px solid var(--el-border-color-lighter, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dark .cal-meeting-link-bar,
+[data-theme="dark"] .cal-meeting-link-bar {
+  background: #111317;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.cal-meeting-url {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--el-text-color-primary, #0f172a);
+  text-decoration: underline;
+  word-break: break-all;
+  flex: 1;
+  min-width: 0;
+}
+
+.cal-meeting-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.cal-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  background: #ffffff;
+  color: #000000;
+  border: 1px solid #d4d4d8;
+  transition: all 150ms ease;
+}
+
+.cal-link-btn.primary {
+  background: #000000;
+  color: #ffffff;
+  border-color: #000000;
+}
+
+.dark .cal-link-btn,
+[data-theme="dark"] .cal-link-btn {
+  background: #000000;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.dark .cal-link-btn.primary,
+[data-theme="dark"] .cal-link-btn.primary {
+  background: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
 }
 </style>

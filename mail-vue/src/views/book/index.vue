@@ -7,7 +7,9 @@
           <Icon icon="hugeicons:checkmark-circle-02" width="64" height="64" class="success-icon" />
         </div>
         <h1 class="confirmed-title">Meeting Scheduled!</h1>
-        <p class="confirmed-desc">A calendar invitation has been sent to <strong>{{ form.guestEmail }}</strong>.</p>
+        <p class="confirmed-desc">
+          Booked for <strong>{{ form.guestName }}</strong> ({{ form.guestEmail }}). Your meeting link is ready below and saved to your Calendar.
+        </p>
 
         <div class="confirmed-details-box">
           <div class="detail-row">
@@ -20,7 +22,35 @@
           </div>
           <div class="detail-row">
             <Icon icon="hugeicons:video-01" width="18" height="18" class="detail-icon" />
-            <span>Google Meet (link provided in invitation)</span>
+            <span>GrabMails Video Meeting</span>
+          </div>
+
+          <!-- Direct Meeting Invitation Link Box -->
+          <div class="meeting-link-box">
+            <span class="meeting-link-label">Meeting Invitation Link</span>
+            <a
+              :href="meetingLink"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="meeting-link-url"
+            >
+              {{ meetingLink }}
+            </a>
+            <div class="meeting-link-btns">
+              <button type="button" class="link-copy-btn" @click="copyMeetingLink">
+                <Icon icon="hugeicons:copy" width="14" height="14" />
+                <span>{{ linkCopied ? 'Copied!' : 'Copy Link' }}</span>
+              </button>
+              <a
+                :href="meetingLink"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="link-join-btn"
+              >
+                <Icon icon="hugeicons:video-01" width="14" height="14" />
+                <span>Join Meeting</span>
+              </a>
+            </div>
           </div>
         </div>
 
@@ -28,6 +58,10 @@
           <el-button type="primary" size="large" class="action-btn" @click="downloadBookingIcs">
             <Icon icon="hugeicons:download-04" width="18" height="18" class="mr-2" />
             <span>Add to Calendar (.ics)</span>
+          </el-button>
+          <el-button size="large" class="action-btn" @click="goToCalendar">
+            <Icon icon="hugeicons:calendar-03" width="18" height="18" class="mr-2" />
+            <span>View in Calendar</span>
           </el-button>
           <el-button size="large" class="action-btn" @click="resetBooking">
             <span>Book Another Meeting</span>
@@ -51,7 +85,7 @@
           </div>
           <div class="meta-item">
             <Icon icon="hugeicons:video-01" width="16" height="16" class="meta-icon" />
-            <span>Google Meet video call</span>
+            <span>Video call link generated on booking</span>
           </div>
 
           <p class="event-desc">
@@ -168,9 +202,12 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { ElMessage } from 'element-plus'
 import dayjs from 'dayjs'
+
+const router = useRouter()
 
 const selectedTimezone = ref(
   Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York'
@@ -181,6 +218,31 @@ const selectedDateStr = ref(dayjs().add(1, 'day').format('YYYY-MM-DD'))
 const selectedSlot = ref(null)
 const showFormStep = ref(false)
 const bookedState = ref(false)
+const meetingLink = ref('')
+const linkCopied = ref(false)
+
+function generateMeetingLink() {
+  const bytes = new Uint8Array(6)
+  crypto.getRandomValues(bytes)
+  const roomCode = Array.from(bytes, b => b.toString(36).padStart(2, '0')).join('').slice(0, 10)
+  return `https://meet.jit.si/GrabMails-${roomCode}`
+}
+
+async function copyMeetingLink() {
+  if (!meetingLink.value) return
+  try {
+    await navigator.clipboard.writeText(meetingLink.value)
+    linkCopied.value = true
+    ElMessage.success('Meeting invitation link copied!')
+    setTimeout(() => { linkCopied.value = false }, 2200)
+  } catch (e) {
+    ElMessage.error('Failed to copy link')
+  }
+}
+
+function goToCalendar() {
+  router.push('/calendar')
+}
 
 const form = ref({
   guestName: '',
@@ -266,6 +328,9 @@ function submitBooking() {
     return
   }
 
+  const generatedLink = generateMeetingLink()
+  meetingLink.value = generatedLink
+
   // Insert into calendar events
   try {
     const raw = localStorage.getItem('grabmails_calendar_events')
@@ -275,9 +340,11 @@ function submitBooking() {
       title: `Consultation: ${form.value.guestName}`,
       starts_at: selectedSlot.value.startsAt,
       ends_at: selectedSlot.value.endsAt,
-      location: 'Google Meet',
-      description: `Meeting with ${form.value.guestName} (${form.value.guestEmail})\nNotes: ${form.value.notes}`,
-      color: '#059669'
+      location: generatedLink,
+      meetingLink: generatedLink,
+      guestEmail: form.value.guestEmail,
+      description: `Meeting with ${form.value.guestName} (${form.value.guestEmail})\nJoin Link: ${generatedLink}${form.value.notes ? `\nNotes: ${form.value.notes}` : ''}`,
+      color: '#18181b'
     }
     events.push(newEvent)
     localStorage.setItem('grabmails_calendar_events', JSON.stringify(events))
@@ -291,6 +358,8 @@ function resetBooking() {
   bookedState.value = false
   showFormStep.value = false
   selectedSlot.value = null
+  meetingLink.value = ''
+  linkCopied.value = false
   form.value = {
     guestName: '',
     guestEmail: '',
@@ -300,6 +369,7 @@ function resetBooking() {
 
 function downloadBookingIcs() {
   if (!selectedSlot.value) return
+  const link = meetingLink.value || ''
   const formatUtc = (d) => dayjs(d).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
   const ics = [
     'BEGIN:VCALENDAR',
@@ -313,8 +383,9 @@ function downloadBookingIcs() {
     `DTSTART:${formatUtc(selectedSlot.value.startsAt)}`,
     `DTEND:${formatUtc(selectedSlot.value.endsAt)}`,
     `SUMMARY:Consultation: ${form.value.guestName}`,
-    'DESCRIPTION:30 Min Meeting with GrabMails Teams via Google Meet',
-    'LOCATION:Google Meet',
+    `DESCRIPTION:30 Min Meeting with GrabMails Teams\\nJoin Video Call: ${link}`,
+    `LOCATION:${link}`,
+    `URL:${link}`,
     'STATUS:CONFIRMED',
     'END:VEVENT',
     'END:VCALENDAR'
@@ -773,13 +844,92 @@ function downloadBookingIcs() {
 }
 
 .detail-icon {
-  color: #4f46e5;
+  color: #09090b;
+  flex-shrink: 0;
+}
+
+.meeting-link-box {
+  margin-top: 6px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #000000;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.meeting-link-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #a1a1aa;
+}
+
+.meeting-link-url {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  color: #ffffff;
+  text-decoration: underline;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.meeting-link-btns {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.link-copy-btn,
+.link-join-btn {
+  flex: 1;
+  min-width: 110px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 150ms ease;
+}
+
+.link-copy-btn {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.link-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.link-join-btn {
+  background: #ffffff;
+  color: #000000;
+  border: 1px solid #ffffff;
+}
+
+.link-join-btn:hover {
+  background: #f4f4f5;
+  color: #000000;
 }
 
 .confirmed-actions {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.confirmed-actions :deep(.el-button + .el-button) {
+  margin-left: 0;
 }
 
 .action-btn {
