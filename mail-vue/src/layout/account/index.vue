@@ -109,7 +109,7 @@
           :key="turnstileContainerKey"
           class="add-email-turnstile"
           :class="verifyShow ? 'turnstile-show' : 'turnstile-hide'"
-          :data-sitekey="settingStore.settings.siteKey"
+          :data-sitekey="getTurnstileSiteKey() || undefined"
           data-callback="onTurnstileSuccess"
           data-error-callback="onTurnstileError"
       >
@@ -213,17 +213,23 @@ function handleTurnstileSuccess(token) {
   botJsError.value = false;
 }
 
+function getTurnstileSiteKey() {
+  const key = settingStore.settings.siteKey;
+  return typeof key === 'string' ? key.trim() : '';
+}
+
 function renderAddTurnstile(api = window.turnstile) {
-  if (!turnstileContainer.value) return null;
+  const sitekey = getTurnstileSiteKey();
+  if (!turnstileContainer.value || !sitekey || !api?.render) return null;
   return api.render(turnstileContainer.value, {
-    sitekey: settingStore.settings.siteKey,
+    sitekey,
     callback: handleTurnstileSuccess,
     'error-callback': handleTurnstileError
   });
 }
 
 async function recoverTurnstile() {
-  if (turnstileRecoveryAttempted) return
+  if (turnstileRecoveryAttempted || !getTurnstileSiteKey()) return
   turnstileRecoveryAttempted = true
   clearTimeout(turnstileRetryTimer)
   botJsError.value = false
@@ -245,6 +251,7 @@ async function recoverTurnstile() {
 }
 
 function handleTurnstileError(e) {
+  if (!getTurnstileSiteKey()) return
   if (verifyErrorCount >= 4) {
     botJsError.value = true
     return
@@ -262,7 +269,11 @@ function handleTurnstileError(e) {
       if (!turnstileId) {
         turnstileId = renderAddTurnstile(window.turnstile)
       } else {
-        window.turnstile.reset(turnstileId);
+        try {
+          window.turnstile.reset(turnstileId);
+        } catch {
+          turnstileId = renderAddTurnstile(window.turnstile)
+        }
       }
     })
   }, 1500)
@@ -520,13 +531,23 @@ function submit() {
     return
   }
 
-  if (!verifyToken && (settingStore.settings.addEmailVerify === 0 || (settingStore.settings.addEmailVerify === 2 && settingStore.settings.addVerifyOpen))) {
+  const sitekey = getTurnstileSiteKey();
+  const needsAddVerify = Boolean(sitekey) && (
+    settingStore.settings.addEmailVerify === 0 ||
+    (settingStore.settings.addEmailVerify === 2 && settingStore.settings.addVerifyOpen)
+  );
+
+  if (!verifyToken && needsAddVerify) {
     if (turnstileRecoveryAttempted) return
     if (!verifyShow.value) {
       verifyShow.value = true
       nextTick(() => {
         if (!turnstileId) {
           try {
+            if (!window.turnstile?.render) {
+              recoverTurnstile()
+              return
+            }
             turnstileId = renderAddTurnstile(window.turnstile)
           } catch (e) {
             botJsError.value = true
@@ -534,7 +555,11 @@ function submit() {
             recoverTurnstile()
           }
         } else {
-          window.turnstile.reset(turnstileId)
+          try {
+            window.turnstile.reset(turnstileId)
+          } catch {
+            turnstileId = renderAddTurnstile(window.turnstile)
+          }
         }
       })
     } else if (botJsError.value) {
@@ -555,7 +580,7 @@ function submit() {
     addForm.email = ''
     accounts.push(account)
     verifyToken = ''
-    settingStore.settings.addVerifyOpen = account.addVerifyOpen
+    settingStore.settings.addVerifyOpen = Boolean(getTurnstileSiteKey()) && Boolean(account.addVerifyOpen)
     ElMessage({
       message: t('addSuccessMsg'),
       type: "success",
@@ -565,10 +590,14 @@ function submit() {
     showAdd.value = false
     userStore.refreshUserInfo()
   }).catch(res => {
-    if (res.code === 400) {
+    if (res.code === 400 && getTurnstileSiteKey()) {
       verifyToken = ''
       if (turnstileId) {
-        window.turnstile.reset(turnstileId)
+        try {
+          window.turnstile.reset(turnstileId)
+        } catch {
+          turnstileId = renderAddTurnstile(window.turnstile)
+        }
       } else {
         nextTick(() => {
           if (!window.turnstile?.render) {

@@ -19,7 +19,7 @@ export function reloadTurnstileScript() {
       reject(new Error('Turnstile script reload timed out'))
     }, 15000)
 
-    script.src = `${SCRIPT_URL}&retry=${Date.now()}`
+    script.src = SCRIPT_URL
     script.async = true
     script.defer = true
     script.onload = () => {

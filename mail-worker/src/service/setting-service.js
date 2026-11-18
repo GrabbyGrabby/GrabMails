@@ -102,11 +102,15 @@ const settingService = {
 
 	async get(c, showSiteKey = false) {
 
-		const [settingRow, recordList] = await Promise.all([
+		const [rawSettingRow, recordList] = await Promise.all([
 			await this.query(c),
 			verifyRecordService.selectListByIP(c)
 		]);
 
+		const settingRow = {
+			...rawSettingRow,
+			resendTokens: { ...(rawSettingRow.resendTokens || {}) }
+		};
 
 		if (!showSiteKey) {
 			settingRow.siteKey = settingRow.siteKey ? `${settingRow.siteKey.slice(0, 6)}******` : null;
@@ -226,6 +230,10 @@ const settingService = {
 
 		const settingRow = await this.get(c, true);
 		const token = await userContext.getToken(c);
+		const hasTurnstileKeys = Boolean(
+			typeof settingRow.siteKey === 'string' && settingRow.siteKey.trim() &&
+			typeof settingRow.secretKey === 'string' && settingRow.secretKey.trim()
+		);
 
 		return {
 			register: settingRow.register,
@@ -233,17 +241,17 @@ const settingService = {
 			manyEmail: settingRow.manyEmail,
 			addEmail: settingRow.addEmail,
 			autoRefresh: settingRow.autoRefresh,
-			addEmailVerify: settingRow.addEmailVerify,
-			registerVerify: (!settingRow.siteKey || !settingRow.secretKey) ? 1 : settingRow.registerVerify,
+			addEmailVerify: !hasTurnstileKeys ? 1 : settingRow.addEmailVerify,
+			registerVerify: !hasTurnstileKeys ? 1 : settingRow.registerVerify,
 			send: settingRow.send,
 			r2Domain: settingRow.r2Domain,
-			siteKey: settingRow.siteKey,
+			siteKey: hasTurnstileKeys ? settingRow.siteKey.trim() : '',
 			background: settingRow.background,
 			loginOpacity: settingRow.loginOpacity,
 			domainList: settingRow.loginDomain === 1 && !token ? [] : settingRow.domainList,
 			regKey: settingRow.regKey,
-			regVerifyOpen: (!settingRow.siteKey || !settingRow.secretKey) ? false : settingRow.regVerifyOpen,
-			addVerifyOpen: settingRow.addVerifyOpen,
+			regVerifyOpen: !hasTurnstileKeys ? false : settingRow.regVerifyOpen,
+			addVerifyOpen: !hasTurnstileKeys ? false : settingRow.addVerifyOpen,
 			noticeTitle: settingRow.noticeTitle,
 			noticeContent: settingRow.noticeContent,
 			noticeType: settingRow.noticeType,
