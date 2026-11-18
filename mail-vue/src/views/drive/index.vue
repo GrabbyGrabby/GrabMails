@@ -831,25 +831,72 @@ function formatDate(d) {
   gap: 10px;
   width: 100%;
   padding: 10px 14px;
-  border-radius: 8px;
+  border-radius: 10px;
   border: none;
   background: transparent;
   color: var(--el-text-color-regular, #475569);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s ease, color 0.15s ease;
   text-align: left;
 }
 
-.nav-tab-btn:hover {
-  background: var(--el-fill-color-light, #f8fafc);
-  color: var(--el-text-color-primary, #0f172a);
+.nav-tab-btn:hover,
+.nav-tab-btn:active,
+.nav-tab-btn:focus-visible {
+  background: #18181b !important;
+  color: #ffffff !important;
 }
 
 .nav-tab-btn.is-active {
-  background: var(--el-color-primary-light-9, #eef2ff);
-  color: var(--el-color-primary, #4f46e5);
+  background: #000000 !important;
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+.nav-tab-btn:hover span,
+.nav-tab-btn:active span,
+.nav-tab-btn:focus-visible span,
+.nav-tab-btn.is-active span,
+.nav-tab-btn:hover svg,
+.nav-tab-btn:active svg,
+.nav-tab-btn:focus-visible svg,
+.nav-tab-btn.is-active svg {
+  color: #ffffff !important;
+}
+
+.nav-tab-btn:hover .tab-count,
+.nav-tab-btn:active .tab-count,
+.nav-tab-btn.is-active .tab-count {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+}
+
+:root.dark .nav-tab-btn,
+.dark .nav-tab-btn,
+[data-theme="dark"] .nav-tab-btn {
+  color: #a1a1aa;
+}
+
+:root.dark .nav-tab-btn:hover,
+:root.dark .nav-tab-btn:active,
+:root.dark .nav-tab-btn:focus-visible,
+.dark .nav-tab-btn:hover,
+.dark .nav-tab-btn:active,
+.dark .nav-tab-btn:focus-visible,
+[data-theme="dark"] .nav-tab-btn:hover,
+[data-theme="dark"] .nav-tab-btn:active,
+[data-theme="dark"] .nav-tab-btn:focus-visible {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+
+:root.dark .nav-tab-btn.is-active,
+.dark .nav-tab-btn.is-active,
+[data-theme="dark"] .nav-tab-btn.is-active {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
   font-weight: 600;
 }
 
@@ -858,8 +905,15 @@ function formatDate(d) {
   font-size: 11px;
   background: var(--el-fill-color, #f1f5f9);
   color: var(--el-text-color-secondary, #64748b);
-  padding: 2px 6px;
+  padding: 2px 7px;
   border-radius: 10px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.dark .tab-count,
+[data-theme="dark"] .tab-count {
+  background: rgba(255, 255, 255, 0.08);
+  color: #a1a1aa;
 }
 
 .storage-card {

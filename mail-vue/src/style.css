@@ -372,9 +372,7 @@ button, input, select, textarea {
 .drive-btn:hover,
 .drive-btn:focus,
 .cal-btn:hover,
-.cal-btn:focus,
-.admin-nav-pill:hover,
-.nav-tab-btn:hover {
+.cal-btn:focus {
     --el-button-hover-text-color: #000000 !important;
     --el-button-text-color: #000000 !important;
     color: #000000 !important;
@@ -398,8 +396,6 @@ button, input, select, textarea {
 .action-btn:hover *,
 .drive-btn:hover *,
 .cal-btn:hover *,
-.admin-nav-pill:hover *,
-.nav-tab-btn:hover *,
 [data-theme="dark"] .el-button:hover * {
     color: #000000 !important;
     fill: currentColor !important;
